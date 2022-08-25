@@ -73,7 +73,7 @@ class Evaluator:
         # dump history of evaluations for future usage
         evaluations = pd.DataFrame(self.__evaluations)
         file_path = self.__root_dir.joinpath("evaluations.csv")
-        evaluations.to_csv(file_path, header=True)
+        evaluations.to_csv(file_path, header=True, index=False)
 
         # dump report for future usage
         file_path = self.__root_dir.joinpath("report.json")

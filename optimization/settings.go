@@ -59,6 +59,29 @@ func (s InitStrategy) MarshalJSON() ([]byte, error) {
 	}
 }
 
+// InvalidParameterCombinationRenderPolicy defines how to handle points corresponding to the
+// ErrInvalidParameterCombination on plots
+type InvalidParameterCombinationRenderPolicy int8
+
+const (
+	// Omit - points corresponding to the ErrInvalidParameterCombination won't be rendered at all
+	Omit InvalidParameterCombinationRenderPolicy = iota + 1
+	// AssignClosestValidValue - points corresponding to the ErrInvalidParameterCombination
+	// will be rendered as if they have max observed valid value
+	AssignClosestValidValue
+)
+
+func (p InvalidParameterCombinationRenderPolicy) MarshalJson() ([]byte, error) {
+	switch p {
+	case Omit:
+		return []byte("\"skip\""), nil
+	case AssignClosestValidValue:
+		return []byte("\"render_closest_valid\""), nil
+	}
+
+	return nil, fmt.Errorf("unknown InvalidParameterCombinationRenderPolicy: %v", p)
+}
+
 // Settings contains the description of what and how to optimize.
 type Settings struct {
 	// RootDir - place to store reports and other things

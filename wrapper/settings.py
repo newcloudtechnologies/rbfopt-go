@@ -23,9 +23,7 @@ class Settings:
     init_strategy: str
 
     @classmethod
-    def from_file(cls, root_dir: pathlib.Path) -> 'Settings':
-        settings_path = root_dir.joinpath("settings.json")
-
+    def from_file(cls, settings_path: pathlib.Path) -> 'Settings':
         with open(settings_path, 'r') as f:
             ss = json.load(f)
 

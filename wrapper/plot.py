@@ -153,12 +153,14 @@ class Renderer:
         grid_x, grid_y = np.mgrid[x_min:x_max:x_step, y_min:y_max:y_step]
 
         # interpolate data
-        grid = scipy.interpolate.griddata(
-            data[[col_name_1, col_name_2]],
-            data[names.Cost],
-            (grid_x, grid_y),
-            method='cubic',
-        )
+        points = data[[col_name_1, col_name_2]]
+
+        if points.shape[0] < 4:
+            raise ValueError('Too little data to render grid, try to increase number of iterations')
+
+        values = data[names.Cost]
+        xi = (grid_x, grid_y)
+        grid = scipy.interpolate.griddata(points, values, xi, method='cubic', )
 
         # render interpolated grid
         im = ax.imshow(grid.T, cmap='jet', origin='lower', interpolation='quadric', vmin=cost_min, vmax=cost_max)
