@@ -120,9 +120,20 @@ class Renderer:
         (cost_min, cost_max) = self.__cost_bounds(df)
         # ax.set_ybound(lower=cost_min, upper=cost_max)
         ax.set_ylim(bottom=cost_min, top=cost_max)
-        print(col_name, cost_min, cost_max)
 
     def pairwise_heatmap_matrix(self):
+        methods = ['none', 'nearest', 'bilinear', 'bicubic', 'spline16',
+                   'spline36', 'hanning', 'hamming', 'hermite', 'kaiser', 'quadric',
+                   'catrom', 'gaussian', 'bessel', 'mitchell', 'sinc', 'lanczos']
+
+        for method in methods:
+            try:
+                print(f"rendering heatmap matrix using method {method}")
+                self.__pairwise_heatmap_matrix(interpolation=method)
+            except Exception as e:
+                print(e)
+
+    def __pairwise_heatmap_matrix(self, interpolation: str):
         df = self.__prepare_df(policy=self.__config.plot.heatmap_render_policy)
 
         column_names = self.__parameter_column_names
@@ -142,18 +153,26 @@ class Renderer:
             for j in range(i + 1, len(column_names)):
                 col_name_1, col_name_2 = column_names[i], column_names[j]
                 ax = axes[j - 1, i]
-                im = self.__render_pairwise_heatmap(df, ax, col_name_1, col_name_2)
+                im = self.__pairwise_heatmap_matrix_part(
+                    df=df,
+                    ax=ax,
+                    col_name_1=col_name_1,
+                    col_name_2=col_name_2,
+                    interpolation=interpolation,
+                )
 
         fig.colorbar(im, ax=axes, shrink=0.6)
 
-        figure_path = self.__config.root_dir.joinpath("pairwise_heatmap_matrix.png")
+        figure_path = self.__config.root_dir.joinpath(f"pairwise_heatmap_matrix_{interpolation}.png")
         fig.savefig(figure_path)
 
-    def __render_pairwise_heatmap(self,
-                                  df: pd.DataFrame,
-                                  ax: matplotlib.axes.Axes,
-                                  col_name_1: str,
-                                  col_name_2: str) -> matplotlib.image.AxesImage:
+    def __pairwise_heatmap_matrix_part(self,
+                                       df: pd.DataFrame,
+                                       ax: matplotlib.axes.Axes,
+                                       col_name_1: str,
+                                       col_name_2: str,
+                                       interpolation: str,
+                                       ) -> matplotlib.image.AxesImage:
         data = df[[col_name_1, col_name_2, names.Cost]]
 
         # select the minimums
@@ -179,7 +198,7 @@ class Renderer:
         grid = scipy.interpolate.griddata(points, values, xi, method='cubic')
 
         # render interpolated grid
-        im = ax.imshow(grid.T, cmap='jet', origin='lower', interpolation='quadric', vmin=cost_min, vmax=cost_max)
+        im = ax.imshow(grid.T, cmap='jet', origin='lower', interpolation=interpolation, vmin=cost_min, vmax=cost_max)
 
         # scale ticks
         x_scale, y_scale = (x_max - x_min) / samples, (y_max - y_min) / samples

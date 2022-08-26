@@ -7,9 +7,9 @@ import pandas as pd
 
 from plot import Renderer
 from report import Report
-from settings import Settings
+from config import Config
 
-debug_dir = pathlib.Path('/home/isaev/trouble/optimization/crab_problem_1')
+debug_dir = pathlib.Path('/home/isaev/trouble/optimization/20220826_1837_HDD_SSD_Volume_IO_CPU_1024')
 
 
 def main():
