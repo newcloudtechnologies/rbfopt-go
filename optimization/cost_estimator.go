@@ -14,7 +14,7 @@ import (
 )
 
 type costEstimator struct {
-	settings    *Settings
+	config      *Config
 	finalReport *Report
 	attempts    int
 }
@@ -24,7 +24,7 @@ func (ce *costEstimator) estimateCost(ctx context.Context, request *estimateCost
 
 	// apply all values to config first
 	for _, pv := range request.ParameterValues {
-		parameterDesc, err := ce.settings.getParameterByName(pv.Name)
+		parameterDesc, err := ce.config.RBFOpt.getParameterByName(pv.Name)
 		if err != nil {
 			return nil, errors.Wrapf(err, "get parameter by name: %s", pv.Name)
 		}
@@ -35,7 +35,7 @@ func (ce *costEstimator) estimateCost(ctx context.Context, request *estimateCost
 	ce.attempts++
 
 	// then run cost estimation
-	cost, err := ce.settings.CostFunction(ctx)
+	cost, err := ce.config.RBFOpt.CostFunction(ctx)
 
 	response := &estimateCostResponse{Cost: cost}
 
@@ -46,14 +46,14 @@ func (ce *costEstimator) estimateCost(ctx context.Context, request *estimateCost
 		}
 
 		response.InvalidParameterCombination = true
-		response.Cost = ce.settings.InvalidParameterCombinationCost
+		response.Cost = ce.config.RBFOpt.InvalidParameterCombinationCost
 	}
 
-	if cost >= ce.settings.InvalidParameterCombinationCost {
+	if cost >= ce.config.RBFOpt.InvalidParameterCombinationCost {
 		return nil, errors.Wrapf(
-			errTooHighInvalidParameterCombinationCost,
+			ErrTooHighObservedCost,
 			"cost=%v, invalid_parameter_combination_cost=%v",
-			cost, ce.settings.InvalidParameterCombinationCost,
+			cost, ce.config.RBFOpt.InvalidParameterCombinationCost,
 		)
 	}
 
@@ -85,6 +85,6 @@ func (ce *costEstimator) registerReport(ctx context.Context, request *registerRe
 	return &registerReportResponse{}, nil
 }
 
-func newCostEstimator(settings *Settings) *costEstimator {
-	return &costEstimator{settings: settings}
+func newCostEstimator(settings *Config) *costEstimator {
+	return &costEstimator{config: settings}
 }

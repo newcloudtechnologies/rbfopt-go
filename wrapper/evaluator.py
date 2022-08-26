@@ -10,10 +10,10 @@ import jsons
 import numpy as np
 import pandas as pd
 
-from wrapper.types import Cost, ParameterValue
-from wrapper.client import Client
-from wrapper.report import Report
-import wrapper.names as names
+from common import Cost, ParameterValue
+from client import Client
+from report import Report
+import names
 
 
 class Evaluator:

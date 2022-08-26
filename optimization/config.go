@@ -22,14 +22,6 @@ type Cost = float64
 // CostFunction call is expected to be expensive, so client should check context expiration.
 type CostFunction func(ctx context.Context) (Cost, error)
 
-// ErrInvalidParameterCombination notifies optimizer about invalid combination of parameters.
-// CostFunction must return MaxCost and ErrInvalidParameterCombination if it happened.
-var ErrInvalidParameterCombination = errors.New("invalid parameter combination")
-
-var errTooHighInvalidParameterCombinationCost = errors.New(
-	"too high value of InvalidParameterCombinationCost: " +
-		"visit https://github.com/coin-or/rbfopt/issues/28#issuecomment-629720480 to pick a good one")
-
 // InitStrategy determines the way RBFOpt selects points.
 type InitStrategy int8
 
@@ -71,78 +63,117 @@ const (
 	AssignClosestValidValue
 )
 
-func (p InvalidParameterCombinationRenderPolicy) MarshalJson() ([]byte, error) {
+func (p InvalidParameterCombinationRenderPolicy) MarshalJSON() ([]byte, error) {
 	switch p {
 	case Omit:
-		return []byte("\"skip\""), nil
+		return []byte("\"omit\""), nil
 	case AssignClosestValidValue:
-		return []byte("\"render_closest_valid\""), nil
+		return []byte("\"assign_closest_valid_value\""), nil
 	}
 
 	return nil, fmt.Errorf("unknown InvalidParameterCombinationRenderPolicy: %v", p)
 }
 
-// Settings contains the description of what and how to optimize.
-type Settings struct {
-	// RootDir - place to store reports and other things
-	// (optimizer will create it if it doesn't exist).
-	RootDir string
-	// CostFunction itself
-	CostFunction CostFunction
-	// Arguments of a CostFunctions
-	Parameters []*ParameterDescription
-	// RBFOpt: limits number of evaluations
-	MaxEvaluations uint
-	// RBFOpt: limits number of iterations
-	MaxIterations uint
+type RBFOptConfig struct {
+	CostFunction   CostFunction            `json:"-"`               // CostFunction itself
+	Parameters     []*ParameterDescription `json:"parameters"`      // Arguments of a CostFunctions
+	MaxEvaluations uint                    `json:"max_evaluations"` // Evaluations limit
+	MaxIterations  uint                    `json:"max_iterations"`  // Iterations limit
+	InitStrategy   InitStrategy            `json:"init_strategy"`   // Strategy to select initial points
 	// RBFOpt: reason: https://github.com/coin-or/rbfopt/issues/28
-	InvalidParameterCombinationCost Cost
-	// Set to true if you don't want to see large values corresponding to the ErrInvalidParametersCombination on your plots
-	SkipInvalidParameterCombinationOnPlots bool
-	// Strategy to select initial points.
-	InitStrategy InitStrategy
+	InvalidParameterCombinationCost Cost `json:"invalid_parameter_combination_cost"`
 }
 
-func (s *Settings) validate() error {
-	if len(s.RootDir) == 0 {
-		return errors.New("field RootDir is empty")
+func (c *RBFOptConfig) validate() error {
+	if c == nil {
+		return errors.New("empty")
 	}
 
-	if len(s.Parameters) == 0 {
+	if len(c.Parameters) == 0 {
 		return errors.New("field Parameters is empty")
 	}
 
-	if s.CostFunction == nil {
+	if c.CostFunction == nil {
 		return errors.New("field CostFunction is empty")
 	}
 
-	for _, param := range s.Parameters {
+	for _, param := range c.Parameters {
 		if err := param.validate(); err != nil {
 			return errors.Wrapf(err, "validate parameter '%s'", param.Name)
 		}
 	}
 
-	if s.MaxEvaluations == 0 {
+	if c.MaxEvaluations == 0 {
 		return errors.New("field MaxEvaluations is empty")
 	}
 
-	if s.MaxIterations == 0 {
+	if c.MaxIterations == 0 {
 		return errors.New("field MaxIterations is empty")
 	}
 
-	if s.InvalidParameterCombinationCost == math.MaxFloat64 {
-		return errTooHighInvalidParameterCombinationCost
+	if c.InvalidParameterCombinationCost == math.MaxFloat64 {
+		return ErrTooHighInvalidParameterCombinationCost
 	}
 
 	return nil
 }
 
-func (s *Settings) getParameterByName(name string) (*ParameterDescription, error) {
-	for _, param := range s.Parameters {
+func (c *RBFOptConfig) getParameterByName(name string) (*ParameterDescription, error) {
+	for _, param := range c.Parameters {
 		if param.Name == name {
 			return param, nil
 		}
 	}
 
 	return nil, errors.Errorf("param '%s' does not exist", name)
+}
+
+type PlotConfig struct {
+	ScatterPlotPolicy   InvalidParameterCombinationRenderPolicy `json:"scatter_plot_policy"`
+	HeatmapRenderPolicy InvalidParameterCombinationRenderPolicy `json:"heatmap_render_policy"`
+}
+
+func (c *PlotConfig) validate() error {
+	if c.ScatterPlotPolicy == 0 {
+		return errors.New("field ScatterPlotIPCR is empty")
+	}
+
+	if c.HeatmapRenderPolicy == 0 {
+		return errors.New("field HeatmapRenderErrIPCPolicy is empty")
+	}
+
+	return nil
+}
+
+// Config - a top-level configuration structure
+type Config struct {
+	// RootDir - place to store reports and other things
+	// (optimizer will create it if it doesn't exist).
+	RootDir string `json:"root_dir"`
+	// Endpoint for the server that will work as a middleware
+	Endpoint string `json:"endpoint"`
+	// RBFOpt - config of rbfopt library itself
+	RBFOpt *RBFOptConfig `json:"rbfopt"`
+	// PlotConfig - config of plots made by wrapper
+	Plot *PlotConfig `json:"plot"`
+}
+
+func (c *Config) validate() error {
+	if len(c.RootDir) == 0 {
+		return errors.New("field RootDir is empty")
+	}
+
+	if len(c.Endpoint) == 0 {
+		c.Endpoint = "0.0.0.0:8080"
+	}
+
+	if err := c.RBFOpt.validate(); err != nil {
+		return errors.Wrap(err, "validate RBFOpt")
+	}
+
+	if err := c.Plot.validate(); err != nil {
+		return errors.Wrap(err, "field Plot")
+	}
+
+	return nil
 }

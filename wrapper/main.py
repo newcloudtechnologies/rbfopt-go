@@ -6,41 +6,30 @@
 
 import pathlib
 import sys
-import time
-from datetime import datetime
 
 import rbfopt
 
-from wrapper.client import Client
-from wrapper.evaluator import Evaluator
-from wrapper.plot import Renderer
-from wrapper.settings import Settings
+from client import Client
+from config import Config
+from evaluator import Evaluator
+from plot import Renderer
 
 
 def main():
-    # prepare infrastructure
+    # prepare configuration
     root_dir = pathlib.Path(sys.argv[1])
-    wrapper_settings = Settings.from_file(root_dir)
-    print(f"wrapper_settings: {wrapper_settings}")
+    config_path = root_dir.joinpath("config.json")
+    config = Config.from_file(config_path)
+    print(f"config: {config}")
 
-    client = Client(wrapper_settings.endpoint)
-    evaluator = Evaluator(client, wrapper_settings.var_names, root_dir)
+    client = Client(config.endpoint)
+    evaluator = Evaluator(client=client, parameter_names=config.rbfopt.var_names, root_dir=root_dir)
 
-    bb = rbfopt.RbfoptUserBlackBox(
-        wrapper_settings.dimensions,
-        wrapper_settings.var_lower,
-        wrapper_settings.var_upper,
-        wrapper_settings.var_types,
-        evaluator.estimate_cost,
-    )
+    bb = rbfopt.RbfoptUserBlackBox(obj_funct=evaluator.estimate_cost, **config.rbfopt.user_black_box)
 
     # perform optimization
-    rbfopt_settings = rbfopt.RbfoptSettings(
-        max_evaluations=wrapper_settings.max_evaluations,
-        max_iterations=wrapper_settings.max_iterations,
-        rand_seed=int(time.mktime(datetime.now().timetuple())),
-        init_strategy=wrapper_settings.init_strategy,
-    )
+    rbfopt_settings = rbfopt.RbfoptSettings(**config.rbfopt.settings)
+
     alg = rbfopt.RbfoptAlgorithm(rbfopt_settings, bb)
 
     # post report to server

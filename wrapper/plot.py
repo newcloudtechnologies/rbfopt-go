@@ -17,25 +17,29 @@ import scipy.interpolate
 import scipy.stats
 from colorhash import ColorHash
 
-import wrapper.names as names
-from wrapper.report import Report
-from wrapper.settings import Settings
+import names
+from report import Report
+from config import Config, InvalidParameterCombinationRenderPolicy
 
 
 class Renderer:
     __df: pd.DataFrame
-    __root_dir: pathlib.Path
     __report: Report
+    __config: Config
 
-    def __init__(self, ss: Settings, df: pd.DataFrame, report: Report, root_dir: pathlib.Path):
-        # filter values corresponding to ErrInvalidParameterCombination params (if necessary)
-        if ss.skip_invalid_parameter_combination_on_plots:
-            self.__df = df[df[names.InvalidParameterCombination] == False]
-        else:
-            self.__df = df
-
-        self.__root_dir = root_dir
+    def __init__(self, config: Config, df: pd.DataFrame, report: Report):
+        self.__df = df
         self.__report = report
+
+    def __prepare_df(self, policy: InvalidParameterCombinationRenderPolicy) -> pd.DataFrame:
+        match policy:
+            case InvalidParameterCombinationRenderPolicy.omit:
+                # Filter values corresponding to ErrInvalidParameterCombination params
+                return self.__df[self.__df[names.InvalidParameterCombination] == False]
+            case InvalidParameterCombinationRenderPolicy.assign_closest_valid_value:
+                pass
+            case _:
+                raise ValueError(f"unknown policy: {policy}")
 
     @property
     @functools.cache
