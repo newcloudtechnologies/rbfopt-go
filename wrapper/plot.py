@@ -121,21 +121,55 @@ class Renderer:
         # ax.set_ybound(lower=cost_min, upper=cost_max)
         ax.set_ylim(bottom=cost_min, top=cost_max)
 
-    def pairwise_heatmap_matrix(self):
-        methods = ['none', 'nearest', 'bilinear', 'bicubic', 'spline16',
-                   'spline36', 'hanning', 'hamming', 'hermite', 'kaiser', 'quadric',
-                   'catrom', 'gaussian', 'bessel', 'mitchell', 'sinc', 'lanczos']
-
-        for method in methods:
-            try:
-                print(f"rendering heatmap matrix using method {method}")
-                self.__pairwise_heatmap_matrix(interpolation=method)
-            except Exception as e:
-                print(e)
-
-    def __pairwise_heatmap_matrix(self, interpolation: str):
+    def heatmaps(self):
         df = self.__prepare_df(policy=self.__config.plot.heatmap_render_policy)
 
+        # TODO: one can pass a particular set of interpolation methods,
+        #  but honestly I can't see any significant between them.
+        # methods = ['none', 'nearest', 'bilinear', 'bicubic', 'spline16',
+        #            'spline36', 'hanning', 'hamming', 'hermite', 'kaiser', 'quadric',
+        #            'catrom', 'gaussian', 'bessel', 'mitchell', 'sinc', 'lanczos']
+        methods = ['hamming']
+
+        for method in methods:
+            print(f"rendering heatmap matrix using method {method}")
+            self.__pairwise_heatmaps(df=df, interpolation=method)
+            self.__pairwise_heatmap_matrix(df=df, interpolation=method)
+
+    def __pairwise_heatmaps(self, df: pd.DataFrame, interpolation: str):
+        column_names = self.__parameter_column_names
+        for i in range(len(column_names) - 1):
+            for j in range(i + 1, len(column_names)):
+                self.__pairwise_heatmap(df=df,
+                                        col_name_1=column_names[i],
+                                        col_name_2=column_names[j],
+                                        interpolation=interpolation)
+
+    def __pairwise_heatmap(self,
+                           df: pd.DataFrame,
+                           col_name_1: str,
+                           col_name_2: str,
+                           interpolation: str,
+                           ):
+
+        figsize = (4, 4)
+
+        fig, ax = plt.subplots(figsize=figsize, constrained_layout=True)
+
+        im = self.__pairwise_heatmap_interpolate(
+            df=df,
+            ax=ax,
+            col_name_1=col_name_1,
+            col_name_2=col_name_2,
+            interpolation=interpolation,
+        )
+
+        fig.colorbar(im, ax=ax, shrink=0.6)
+
+        figure_path = self.__config.root_dir.joinpath(f"heatmap_{col_name_1}_{col_name_2}_{interpolation}.png")
+        fig.savefig(figure_path)
+
+    def __pairwise_heatmap_matrix(self, df: pd.DataFrame, interpolation: str):
         column_names = self.__parameter_column_names
 
         # approximate size that make image look well
@@ -153,7 +187,7 @@ class Renderer:
             for j in range(i + 1, len(column_names)):
                 col_name_1, col_name_2 = column_names[i], column_names[j]
                 ax = axes[j - 1, i]
-                im = self.__pairwise_heatmap_matrix_part(
+                im = self.__pairwise_heatmap_interpolate(
                     df=df,
                     ax=ax,
                     col_name_1=col_name_1,
@@ -163,10 +197,10 @@ class Renderer:
 
         fig.colorbar(im, ax=axes, shrink=0.6)
 
-        figure_path = self.__config.root_dir.joinpath(f"pairwise_heatmap_matrix_{interpolation}.png")
+        figure_path = self.__config.root_dir.joinpath(f"heatmap_matrix_{interpolation}.png")
         fig.savefig(figure_path)
 
-    def __pairwise_heatmap_matrix_part(self,
+    def __pairwise_heatmap_interpolate(self,
                                        df: pd.DataFrame,
                                        ax: matplotlib.axes.Axes,
                                        col_name_1: str,

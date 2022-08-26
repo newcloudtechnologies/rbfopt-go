@@ -1,5 +1,6 @@
 clean:
 	rm -rf build dist rbfopt_go.egg-info
+	rm -rf /tmp/rbf*
 
 test:
 	go test -count=1 -v ./...

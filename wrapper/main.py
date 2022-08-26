@@ -39,7 +39,7 @@ def main():
     # render plots
     renderer = Renderer(config, evaluations, report)
     renderer.scatterplots()
-    renderer.pairwise_heatmap_matrix()
+    renderer.heatmaps()
 
 
 if __name__ == "__main__":

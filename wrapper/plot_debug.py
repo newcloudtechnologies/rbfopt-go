@@ -19,7 +19,7 @@ def main():
     report = Report.load_from_file(debug_dir.joinpath("report.json"))
     renderer = Renderer(ss=ss, df=evaluations, report=report, root_dir=debug_dir)
     renderer.scatterplots()
-    renderer.pairwise_heatmap_matrix()
+    renderer.heatmaps()
 
 
 if __name__ == '__main__':
