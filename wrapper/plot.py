@@ -3,7 +3,6 @@
 #  License: https://github.com/newcloudtechnologies/rbfopt-go/blob/master/LICENSE
 
 import functools
-import pathlib
 import typing
 from typing import Any, Callable
 
@@ -18,8 +17,8 @@ import scipy.stats
 from colorhash import ColorHash
 
 import names
-from report import Report
 from config import Config, InvalidParameterCombinationRenderPolicy
+from report import Report
 
 
 class Renderer:
@@ -30,14 +29,25 @@ class Renderer:
     def __init__(self, config: Config, df: pd.DataFrame, report: Report):
         self.__df = df
         self.__report = report
+        self.__config = config
 
     def __prepare_df(self, policy: InvalidParameterCombinationRenderPolicy) -> pd.DataFrame:
         match policy:
             case InvalidParameterCombinationRenderPolicy.omit:
                 # Filter values corresponding to ErrInvalidParameterCombination params
-                return self.__df[self.__df[names.InvalidParameterCombination] == False]
+                return self.__df[self.__df.invalid_parameter_combination == False]
             case InvalidParameterCombinationRenderPolicy.assign_closest_valid_value:
-                pass
+                # avoid white spots on the heatmap
+                unique_costs = self.__df.cost.unique()
+                unique_costs.sort()
+                # -1 stands for ErrInvalidParameterCombinationCost, take -2 - the next closest
+                closest_valid_value = unique_costs[-2]
+
+                # make df with replaced values
+                df = self.__df.copy()
+                mask = df.invalid_parameter_combination == True
+                df.cost.where(~mask, closest_valid_value, inplace=True)
+                return df
             case _:
                 raise ValueError(f"unknown policy: {policy}")
 
@@ -47,10 +57,8 @@ class Renderer:
         utility_columns = (names.Cost, names.InvalidParameterCombination)
         return list(filter(lambda x: x not in utility_columns, self.__df.columns))
 
-    @property
-    @functools.cache
-    def __cost_bounds(self) -> typing.List[str]:
-        cost = self.__df[names.Cost]
+    def __cost_bounds(self, df: pd.DataFrame) -> typing.List[str]:
+        cost = df[names.Cost]
         return [cost.min(), cost.max()]
 
     def scatterplots(self):
@@ -85,11 +93,12 @@ class Renderer:
         fig.tight_layout()
 
         suffix = "only_optimal_values" if only_optimal_values else "all_values"
-        figure_path = self.__root_dir.joinpath(f"scatterplot_{suffix}.png")
+        figure_path = self.__config.root_dir.joinpath(f"scatterplot_{suffix}.png")
         fig.savefig(figure_path)
 
     def __render_scatterplot(self, ax: matplotlib.axes.Axes, col_name: str, only_optimal_values: bool):
-        data = pd.DataFrame({col_name: self.__df[col_name], names.Cost: self.__df[names.Cost]})
+        df = self.__prepare_df(policy=self.__config.plot.scatter_plot_policy)
+        data = pd.DataFrame({col_name: df[col_name], names.Cost: df[names.Cost]})
 
         if only_optimal_values:
             # for every argument value, pick the best cost function value
@@ -108,12 +117,14 @@ class Renderer:
         ax.annotate("{:.2f}".format(opt_val), (opt_arg, opt_val))
 
         # set equal limits
-        (cost_min, cost_max) = self.__cost_bounds
+        (cost_min, cost_max) = self.__cost_bounds(df)
         # ax.set_ybound(lower=cost_min, upper=cost_max)
         ax.set_ylim(bottom=cost_min, top=cost_max)
         print(col_name, cost_min, cost_max)
 
     def pairwise_heatmap_matrix(self):
+        df = self.__prepare_df(policy=self.__config.plot.heatmap_render_policy)
+
         column_names = self.__parameter_column_names
 
         # approximate size that make image look well
@@ -131,18 +142,19 @@ class Renderer:
             for j in range(i + 1, len(column_names)):
                 col_name_1, col_name_2 = column_names[i], column_names[j]
                 ax = axes[j - 1, i]
-                im = self.__render_pairwise_heatmap(ax, col_name_1, col_name_2)
+                im = self.__render_pairwise_heatmap(df, ax, col_name_1, col_name_2)
 
         fig.colorbar(im, ax=axes, shrink=0.6)
 
-        figure_path = self.__root_dir.joinpath("pairwise_heatmap_matrix.png")
+        figure_path = self.__config.root_dir.joinpath("pairwise_heatmap_matrix.png")
         fig.savefig(figure_path)
 
     def __render_pairwise_heatmap(self,
+                                  df: pd.DataFrame,
                                   ax: matplotlib.axes.Axes,
                                   col_name_1: str,
                                   col_name_2: str) -> matplotlib.image.AxesImage:
-        data = self.__df[[col_name_1, col_name_2, names.Cost]]
+        data = df[[col_name_1, col_name_2, names.Cost]]
 
         # select the minimums
         data = data.groupby([col_name_1, col_name_2])[names.Cost].agg(lambda x: x.min()).reset_index()
@@ -150,7 +162,7 @@ class Renderer:
         # compute grid bounds
         x_min, x_max = data[col_name_1].min(), data[col_name_1].max()
         y_min, y_max = data[col_name_2].min(), data[col_name_2].max()
-        (cost_min, cost_max) = self.__cost_bounds
+        (cost_min, cost_max) = self.__cost_bounds(df)
         samples = 100
         x_step = (x_max - x_min) / samples
         y_step = (y_max - y_min) / samples
@@ -164,7 +176,7 @@ class Renderer:
 
         values = data[names.Cost]
         xi = (grid_x, grid_y)
-        grid = scipy.interpolate.griddata(points, values, xi, method='cubic', )
+        grid = scipy.interpolate.griddata(points, values, xi, method='cubic')
 
         # render interpolated grid
         im = ax.imshow(grid.T, cmap='jet', origin='lower', interpolation='quadric', vmin=cost_min, vmax=cost_max)
@@ -187,7 +199,7 @@ class Renderer:
 
     @staticmethod
     def __tick_scaler(scale) -> Callable[[Any, Any], str]:
-        def tick_formater(val, pos) -> str:
+        def tick_formater(val, _) -> str:
             tick = val * scale
             if tick.is_integer():
                 return str(int(tick))

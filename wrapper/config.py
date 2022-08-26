@@ -3,8 +3,10 @@
 #  License: https://github.com/newcloudtechnologies/rbfopt-go/blob/master/LICENSE
 import json
 import os
+import pathlib
 from dataclasses import dataclass
-from datetime import time, datetime
+from datetime import datetime
+from time import mktime
 from enum import Enum
 from typing import List, Any, Dict
 
@@ -102,21 +104,21 @@ class RBFOptConfig:
         return dict(
             max_evaluations=self.max_evaluations,
             max_iterations=self.max_iterations,
-            rand_seed=int(time.mktime(datetime.now().timetuple())),
+            rand_seed=int(mktime(datetime.now().timetuple())),
             init_strategy=self.init_strategy,
         )
 
 
 @dataclass
 class Config:
-    root_dir: str
+    root_dir: os.PathLike
     endpoint: str
     rbfopt: RBFOptConfig
     plot: PlotConfig
 
     @staticmethod
     def from_dict(obj: Any) -> 'Config':
-        _root_dir = str(obj.get("root_dir"))
+        _root_dir = pathlib.Path(str(obj.get("root_dir")))
         _endpoint = str(obj.get("endpoint"))
         _rbfopt = RBFOptConfig.from_dict(obj.get("rbfopt"))
         _plot = PlotConfig.from_dict(obj.get("plot"))

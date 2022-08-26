@@ -51,29 +51,6 @@ func (s InitStrategy) MarshalJSON() ([]byte, error) {
 	}
 }
 
-// InvalidParameterCombinationRenderPolicy defines how to handle points corresponding to the
-// ErrInvalidParameterCombination on plots
-type InvalidParameterCombinationRenderPolicy int8
-
-const (
-	// Omit - points corresponding to the ErrInvalidParameterCombination won't be rendered at all
-	Omit InvalidParameterCombinationRenderPolicy = iota + 1
-	// AssignClosestValidValue - points corresponding to the ErrInvalidParameterCombination
-	// will be rendered as if they have max observed valid value
-	AssignClosestValidValue
-)
-
-func (p InvalidParameterCombinationRenderPolicy) MarshalJSON() ([]byte, error) {
-	switch p {
-	case Omit:
-		return []byte("\"omit\""), nil
-	case AssignClosestValidValue:
-		return []byte("\"assign_closest_valid_value\""), nil
-	}
-
-	return nil, fmt.Errorf("unknown InvalidParameterCombinationRenderPolicy: %v", p)
-}
-
 type RBFOptConfig struct {
 	CostFunction   CostFunction            `json:"-"`               // CostFunction itself
 	Parameters     []*ParameterDescription `json:"parameters"`      // Arguments of a CostFunctions
@@ -128,9 +105,37 @@ func (c *RBFOptConfig) getParameterByName(name string) (*ParameterDescription, e
 	return nil, errors.Errorf("param '%s' does not exist", name)
 }
 
+// InvalidParameterCombinationRenderPolicy defines how to handle points corresponding to the
+// ErrInvalidParameterCombination on plots
+//go:generate stringer -type=InvalidParameterCombinationRenderPolicy
+type InvalidParameterCombinationRenderPolicy int8
+
+const (
+	// Omit - points corresponding to the ErrInvalidParameterCombination won't be rendered at all
+	Omit InvalidParameterCombinationRenderPolicy = iota + 1
+	// AssignClosestValidValue - points corresponding to the ErrInvalidParameterCombination
+	// will be rendered as if they have max observed valid value
+	AssignClosestValidValue
+)
+
+func (p InvalidParameterCombinationRenderPolicy) MarshalJSON() ([]byte, error) {
+	switch p {
+	case Omit:
+		return []byte("\"omit\""), nil
+	case AssignClosestValidValue:
+		return []byte("\"assign_closest_valid_value\""), nil
+	}
+
+	return nil, fmt.Errorf("unknown InvalidParameterCombinationRenderPolicy: %v", p)
+}
+
 type PlotConfig struct {
 	ScatterPlotPolicy   InvalidParameterCombinationRenderPolicy `json:"scatter_plot_policy"`
 	HeatmapRenderPolicy InvalidParameterCombinationRenderPolicy `json:"heatmap_render_policy"`
+}
+
+func (c *PlotConfig) String() string {
+	return fmt.Sprintf("scatter_%v_heatmap_%v", c.ScatterPlotPolicy, c.ScatterPlotPolicy)
 }
 
 func (c *PlotConfig) validate() error {

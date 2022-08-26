@@ -147,7 +147,7 @@ func newServer(logger logr.Logger, endpoint string, estimator *costEstimator) *s
 	handler.HandleFunc("/register_report", srv.registerReportHandler)
 
 	go func() {
-		if err := srv.httpServer.ListenAndServe(); errors.Is(err, http.ErrServerClosed) {
+		if err := srv.httpServer.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 			srv.logger.Error(err, "http server listen and serve")
 		}
 	}()

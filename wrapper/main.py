@@ -37,7 +37,7 @@ def main():
     evaluations, report = evaluator.dump()
 
     # render plots
-    renderer = Renderer(wrapper_settings, evaluations, report, root_dir)
+    renderer = Renderer(config, evaluations, report)
     renderer.scatterplots()
     renderer.pairwise_heatmap_matrix()
 
