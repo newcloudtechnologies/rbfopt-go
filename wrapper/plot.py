@@ -27,7 +27,7 @@ class Renderer:
     __config: Config
 
     def __init__(self, config: Config, df: pd.DataFrame, report: Report):
-        self.__df = df
+        self.__df = df.loc[:, df.columns != names.Iteration]
         self.__report = report
         self.__config = config
 
@@ -152,7 +152,7 @@ class Renderer:
                            interpolation: str,
                            ):
 
-        figsize = (4, 4)
+        figsize = (6, 6)
 
         fig, ax = plt.subplots(figsize=figsize, constrained_layout=True)
 

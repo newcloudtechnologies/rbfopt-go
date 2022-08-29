@@ -22,12 +22,14 @@ class Evaluator:
     __evaluations: []
     __root_dir: pathlib.Path
     __report: Report
+    __iterations: int
 
     def __init__(self, client: Client, parameter_names: List[str], root_dir: pathlib.Path):
         self.__client = client
         self.__parameter_names = parameter_names
         self.__evaluations = []
         self.__root_dir = root_dir
+        self.__iterations = 0
 
     def __np_array_to_parameter_values(self, raw_values: np.ndarray) -> List[ParameterValue]:
         parameter_values = []
@@ -38,11 +40,14 @@ class Evaluator:
         return parameter_values
 
     def estimate_cost(self, raw_values: np.ndarray) -> Cost:
+        self.__iterations += 1
+
         parameter_values = self.__np_array_to_parameter_values(raw_values)
         cost, invalid_parameter_combination = self.__client.estimate_cost(parameter_values)
 
         # store evaluation result for the future use
         entry = {name: value for (name, value) in zip(self.__parameter_names, raw_values)}
+        entry[names.Iteration] = self.__iterations
         entry[names.Cost] = cost
         entry[names.InvalidParameterCombination] = invalid_parameter_combination
 
