@@ -20,55 +20,28 @@ import (
 	"github.com/pkg/errors"
 )
 
-type rbfOptSettings struct {
-	Endpoint                               string                  `json:"endpoint"`
-	Parameters                             []*ParameterDescription `json:"parameters"`
-	MaxEvaluations                         uint                    `json:"max_evaluations"`
-	MaxIterations                          uint                    `json:"max_iterations"`
-	SkipInvalidParameterCombinationOnPlots bool                    `json:"skip_invalid_parameter_combination_on_plots"`
-	InitStrategy                           InitStrategy            `json:"init_strategy"`
-}
-
 type rbfOptWrapper struct {
-	ctx      context.Context
-	settings *Settings
-	endpoint string
+	ctx    context.Context
+	config *Config
 }
-
-const rbfOptGoExecutable = "rbfopt-go-wrapper"
 
 func (r *rbfOptWrapper) run() error {
-	path := filepath.Join(r.settings.RootDir, "settings.json")
+	// render config to JSON because it will be used by Python part
+	path := filepath.Join(r.config.RootDir, "config.json")
 
-	if err := r.dumpConfig(path); err != nil {
-		return errors.Wrap(err, "dump config")
+	data, err := json.Marshal(r.config)
+	if err != nil {
+		return errors.Wrap(err, "marshal json")
+	}
+
+	if err := ioutil.WriteFile(path, data, 0600); err != nil {
+		return errors.Wrap(err, "write file")
 	}
 
 	//nolint:gosec
-	cmd := exec.Command(rbfOptGoExecutable, r.settings.RootDir)
+	cmd := exec.Command(rbfOptGoExecutable, r.config.RootDir)
 	if err := r.executeCommand(r.ctx, cmd); err != nil {
 		return errors.Wrap(err, "execute command")
-	}
-
-	return nil
-}
-
-func (r *rbfOptWrapper) dumpConfig(path string) error {
-	cfg := &rbfOptSettings{
-		Endpoint:                               r.endpoint,
-		Parameters:                             r.settings.Parameters,
-		MaxEvaluations:                         r.settings.MaxEvaluations,
-		MaxIterations:                          r.settings.MaxIterations,
-		SkipInvalidParameterCombinationOnPlots: r.settings.SkipInvalidParameterCombinationOnPlots,
-	}
-
-	data, err := json.Marshal(cfg)
-	if err != nil {
-		return errors.Wrap(err, "json marshal")
-	}
-
-	if err := ioutil.WriteFile(path, data, 0644); err != nil {
-		return errors.Wrap(err, "write file")
 	}
 
 	return nil
@@ -119,11 +92,10 @@ func (r *rbfOptWrapper) executeCommand(ctx context.Context, cmd *exec.Cmd) error
 	return nil
 }
 
-func runRbfOpt(ctx context.Context, settings *Settings, endpoint string) error {
+func runRbfOpt(ctx context.Context, config *Config) error {
 	wrapper := &rbfOptWrapper{
-		ctx:      ctx,
-		settings: settings,
-		endpoint: endpoint,
+		ctx:    ctx,
+		config: config,
 	}
 
 	if err := wrapper.run(); err != nil {

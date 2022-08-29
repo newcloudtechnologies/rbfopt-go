@@ -32,26 +32,24 @@ type Report struct {
 
 // Optimize is an entry point for the optimization routines.
 // One may want to pass logger within context to have detailed logs.
-func Optimize(ctx context.Context, settings *Settings) (*Report, error) {
+func Optimize(ctx context.Context, config *Config) (*Report, error) {
 	logger := logr.FromContextOrDiscard(ctx)
 
-	// check settings
-	if err := settings.validate(); err != nil {
-		return nil, errors.Wrap(err, "validate settings")
+	// check config
+	if err := config.validate(); err != nil {
+		return nil, errors.Wrap(err, "validate config")
 	}
 
 	// run HTTP server that will redirect requests from Python optimizer to your Go service
-	estimator := newCostEstimator(settings)
+	estimator := newCostEstimator(config)
 
-	endpoint := "0.0.0.0:8080"
-
-	srv := newServer(logger, endpoint, estimator)
+	srv := newServer(logger, config.Endpoint, estimator)
 	defer srv.quit()
 
 	// create root directory for configs and artifacts if necessary
-	if _, err := os.Stat(settings.RootDir); err != nil {
+	if _, err := os.Stat(config.RootDir); err != nil {
 		if os.IsNotExist(err) {
-			if err := os.MkdirAll(settings.RootDir, 0755); err != nil {
+			if err := os.MkdirAll(config.RootDir, 0755); err != nil {
 				return nil, errors.Wrap(err, "make directory")
 			}
 		} else {
@@ -61,7 +59,7 @@ func Optimize(ctx context.Context, settings *Settings) (*Report, error) {
 
 	// run Python optimizer
 	ctx = logr.NewContext(ctx, logger)
-	if err := runRbfOpt(ctx, settings, endpoint); err != nil {
+	if err := runRbfOpt(ctx, config); err != nil {
 		if srv.lastError != nil {
 			return nil, errors.Wrap(srv.lastError, "run rbfopt")
 		}

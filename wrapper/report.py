@@ -9,7 +9,7 @@ from typing import List
 
 import jsons
 
-from wrapper.types import Cost, ParameterValue
+from common import Cost, ParameterValue
 
 
 @dataclass

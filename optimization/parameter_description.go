@@ -17,8 +17,8 @@ type ConfigModifier func(int)
 
 // Bound describes reasonable bounds for parameter variation.
 type Bound struct {
-	From int `json:"from"`
-	To   int `json:"to"`
+	Left  int `json:"left"`
+	Right int `json:"right"`
 }
 
 // ParameterDescription is something you want to optimization in your service configuration.

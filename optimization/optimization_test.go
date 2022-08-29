@@ -14,8 +14,8 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
-	"github.com/stretchr/testify/require"
 	"github.com/newcloudtechnologies/rbfopt-go/optimization"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -55,117 +55,141 @@ func TestRbfoptGo(t *testing.T) {
 		cfg := &serviceConfig{paramX: 0, paramY: 0, paramZ: 0}
 
 		// set bounds to parameters
-		settings := &optimization.Settings{
+		config := &optimization.Config{
 			RootDir: makeRootDirPath(),
-			Parameters: []*optimization.ParameterDescription{
-				{
-					Name:           "x",
-					Bound:          &optimization.Bound{From: 0, To: 10},
-					ConfigModifier: cfg.setParamX,
+			RBFOpt: &optimization.RBFOptConfig{
+				CostFunction: cfg.costFunction,
+				Parameters: []*optimization.ParameterDescription{
+					{
+						Name:           "x",
+						Bound:          &optimization.Bound{Left: 0, Right: 10},
+						ConfigModifier: cfg.setParamX,
+					},
+					{
+						Name:           "y",
+						Bound:          &optimization.Bound{Left: 0, Right: 10},
+						ConfigModifier: cfg.setParamY,
+					},
+					{
+						Name:           "z",
+						Bound:          &optimization.Bound{Left: 0, Right: 10},
+						ConfigModifier: cfg.setParamZ,
+					},
 				},
-				{
-					Name:           "y",
-					Bound:          &optimization.Bound{From: 0, To: 10},
-					ConfigModifier: cfg.setParamY,
-				},
-				{
-					Name:           "z",
-					Bound:          &optimization.Bound{From: 0, To: 10},
-					ConfigModifier: cfg.setParamZ,
-				},
+				MaxEvaluations:                  25,
+				MaxIterations:                   25,
+				InvalidParameterCombinationCost: 10,
 			},
-			CostFunction:                    cfg.costFunction,
-			MaxEvaluations:                  25,
-			MaxIterations:                   25,
-			InvalidParameterCombinationCost: 10,
+			Plot: &optimization.PlotConfig{
+				ScatterPlotPolicy:   optimization.Omit,
+				HeatmapRenderPolicy: optimization.Omit,
+			},
 		}
 
 		logger := newLogger()
 		ctx := logr.NewContext(context.Background(), logger)
 
 		// perform optimization
-		report, err := optimization.Optimize(ctx, settings)
+		report, err := optimization.Optimize(ctx, config)
 		require.NoError(t, err)
 		require.NotNil(t, report)
 
 		// validate that the optimum was reached
 		expectedOptimumCfg := &serviceConfig{
-			paramX: settings.Parameters[0].Bound.To,
-			paramY: settings.Parameters[1].Bound.To,
-			paramZ: settings.Parameters[2].Bound.To,
+			paramX: config.RBFOpt.Parameters[0].Bound.Right,
+			paramY: config.RBFOpt.Parameters[1].Bound.Right,
+			paramZ: config.RBFOpt.Parameters[2].Bound.Right,
 		}
 
 		expectedOptimumCost, err := expectedOptimumCfg.costFunction(context.Background())
 		require.NoError(t, err)
 
 		require.Equal(t, expectedOptimumCost, report.Cost)
-		require.Len(t, report.Optimum, len(settings.Parameters))
+		require.Len(t, report.Optimum, len(config.RBFOpt.Parameters))
 
-		for i := 0; i < len(settings.Parameters); i++ {
-			require.Equal(t, report.Optimum[i].Name, settings.Parameters[i].Name)
-			require.Equal(t, report.Optimum[i].Value, settings.Parameters[i].Bound.To)
+		for i := 0; i < len(config.RBFOpt.Parameters); i++ {
+			require.Equal(t, report.Optimum[i].Name, config.RBFOpt.Parameters[i].Name)
+			require.Equal(t, report.Optimum[i].Value, config.RBFOpt.Parameters[i].Bound.Right)
 		}
 	})
 
 	t.Run("invalid parameters combination", func(t *testing.T) {
-		cfg := &serviceConfig{paramX: 0, paramY: 0, paramZ: 0}
-
-		settings := &optimization.Settings{
-			RootDir: makeRootDirPath(),
-			Parameters: []*optimization.ParameterDescription{
-				{
-					Name:           "x",
-					Bound:          &optimization.Bound{From: 0, To: 10},
-					ConfigModifier: cfg.setParamX,
-				},
-				{
-					Name:           "y",
-					Bound:          &optimization.Bound{From: 0, To: 10},
-					ConfigModifier: cfg.setParamY,
-				},
-				{
-					Name:           "z",
-					Bound:          &optimization.Bound{From: 0, To: 10},
-					ConfigModifier: cfg.setParamZ,
-				},
+		testCases := []*optimization.PlotConfig{
+			{
+				ScatterPlotPolicy:   optimization.Omit,
+				HeatmapRenderPolicy: optimization.Omit,
 			},
-			// the cost function is almost the same as in previous test case, but now we impose some conditions on variables
-			CostFunction: func(ctx context.Context) (optimization.Cost, error) {
-				// explicitly validate parameters, throw errors if they're invalid
-				if cfg.paramX < cfg.paramY {
-					return 0, optimization.ErrInvalidParameterCombination
+			{
+				ScatterPlotPolicy:   optimization.Omit,
+				HeatmapRenderPolicy: optimization.AssignClosestValidValue,
+			},
+		}
+
+		for _, tc := range testCases {
+			tc := tc
+			t.Run(tc.String(), func(t *testing.T) {
+				cfg := &serviceConfig{paramX: 0, paramY: 0, paramZ: 0}
+
+				config := &optimization.Config{
+					RootDir: makeRootDirPath(),
+					RBFOpt: &optimization.RBFOptConfig{
+						Parameters: []*optimization.ParameterDescription{
+							{
+								Name:           "x",
+								Bound:          &optimization.Bound{Left: 0, Right: 10},
+								ConfigModifier: cfg.setParamX,
+							},
+							{
+								Name:           "y",
+								Bound:          &optimization.Bound{Left: 0, Right: 10},
+								ConfigModifier: cfg.setParamY,
+							},
+							{
+								Name:           "z",
+								Bound:          &optimization.Bound{Left: 0, Right: 10},
+								ConfigModifier: cfg.setParamZ,
+							},
+						},
+						// the cost function is almost the same as in previous test case, but now we impose some conditions on variables
+						CostFunction: func(ctx context.Context) (optimization.Cost, error) {
+							// explicitly validate parameters, throw errors if they're invalid
+							if cfg.paramX < cfg.paramY {
+								return 0, optimization.ErrInvalidParameterCombination
+							}
+
+							return cfg.costFunction(ctx)
+						},
+						MaxEvaluations:                  25,
+						MaxIterations:                   25,
+						InvalidParameterCombinationCost: 10,
+					},
+					Plot: tc,
 				}
 
-				return cfg.costFunction(ctx)
-			},
-			MaxEvaluations:                         25,
-			MaxIterations:                          25,
-			InvalidParameterCombinationCost:        10,
-			SkipInvalidParameterCombinationOnPlots: true,
-		}
+				logger := newLogger()
+				ctx := logr.NewContext(context.Background(), logger)
 
-		logger := newLogger()
-		ctx := logr.NewContext(context.Background(), logger)
+				report, err := optimization.Optimize(ctx, config)
+				require.NoError(t, err)
+				require.NotNil(t, report)
 
-		report, err := optimization.Optimize(ctx, settings)
-		require.NoError(t, err)
-		require.NotNil(t, report)
+				expectedOptimumCfg := &serviceConfig{
+					paramX: config.RBFOpt.Parameters[0].Bound.Right,
+					paramY: config.RBFOpt.Parameters[1].Bound.Right,
+					paramZ: config.RBFOpt.Parameters[2].Bound.Right,
+				}
 
-		expectedOptimumCfg := &serviceConfig{
-			paramX: settings.Parameters[0].Bound.To,
-			paramY: settings.Parameters[1].Bound.To,
-			paramZ: settings.Parameters[2].Bound.To,
-		}
+				expectedOptimumCost, err := expectedOptimumCfg.costFunction(context.Background())
+				require.NoError(t, err)
 
-		expectedOptimumCost, err := expectedOptimumCfg.costFunction(context.Background())
-		require.NoError(t, err)
+				require.Equal(t, expectedOptimumCost, report.Cost)
+				require.Len(t, report.Optimum, len(config.RBFOpt.Parameters))
 
-		require.Equal(t, expectedOptimumCost, report.Cost)
-		require.Len(t, report.Optimum, len(settings.Parameters))
-
-		for i := 0; i < len(settings.Parameters); i++ {
-			require.Equal(t, report.Optimum[i].Name, settings.Parameters[i].Name)
-			require.Equal(t, report.Optimum[i].Value, settings.Parameters[i].Bound.To)
+				for i := 0; i < len(config.RBFOpt.Parameters); i++ {
+					require.Equal(t, report.Optimum[i].Name, config.RBFOpt.Parameters[i].Name)
+					require.Equal(t, report.Optimum[i].Value, config.RBFOpt.Parameters[i].Bound.Right)
+				}
+			})
 		}
 	})
 }

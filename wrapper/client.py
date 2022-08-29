@@ -9,9 +9,9 @@ from urllib.parse import urljoin
 import jsons
 import requests
 
-from wrapper.types import Cost, ParameterValue
-from wrapper.report import Report
-import wrapper.names as names
+from common import Cost, ParameterValue
+from report import Report
+import names as names
 
 
 class Client:
