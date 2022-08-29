@@ -25,8 +25,6 @@ type rbfOptWrapper struct {
 	config *Config
 }
 
-const rbfOptGoExecutable = "/home/isaev/go/src/github.com/newcloudtechnologies/rbfopt-go/wrapper/main.py"
-
 func (r *rbfOptWrapper) run() error {
 	// render config to JSON because it will be used by Python part
 	path := filepath.Join(r.config.RootDir, "config.json")
