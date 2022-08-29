@@ -144,28 +144,35 @@ func main() {
 	cfg := &serviceConfig{}
 
 	// Describe the variables and set the bounds.
-	settings := &optimization.Settings{
-		Parameters: []*optimization.ParameterDescription{
-			{
-				Name:           "x",
-				Bound:          &optimization.Bound{From: 0, To: 10},
-				ConfigModifier: cfg.setParamX,
+	config := &optimization.Config{
+		RootDir: "/tmp/rbfopt-go",
+		RBFOpt: &optimization.RBFOptConfig{
+			Parameters: []*optimization.ParameterDescription{
+				{
+					Name:           "x",
+					Bound:          &optimization.Bound{Left: 0, Right: 10},
+					ConfigModifier: cfg.setParamX,
+				},
+				{
+					Name:           "y",
+					Bound:          &optimization.Bound{Left: 0, Right: 10},
+					ConfigModifier: cfg.setParamY,
+				},
+				{
+					Name:           "z",
+					Bound:          &optimization.Bound{Left: 0, Right: 10},
+					ConfigModifier: cfg.setParamZ,
+				},
 			},
-			{
-				Name:           "y",
-				Bound:          &optimization.Bound{From: 0, To: 10},
-				ConfigModifier: cfg.setParamY,
-			},
-			{
-				Name:           "z",
-				Bound:          &optimization.Bound{From: 0, To: 10},
-				ConfigModifier: cfg.setParamZ,
-			},
+			CostFunction:                    cfg.costFunction,
+			MaxEvaluations:                  25,
+			MaxIterations:                   25,
+			InvalidParameterCombinationCost: 10,
 		},
-		CostFunction: cfg.costFunction,
-		// This variable controls trade-off between the accuracy of
-		// determination of the optimum and the time spent on it.
-		MaxEvaluations: 10,
+		Plot: &optimization.PlotConfig{
+            ScatterPlotPolicy:   optimization.Omit,
+            HeatmapRenderPolicy: optimization.AssignClosestValidValue,
+        },
 	}
 
 	// Here you may set timeout or provide this context
@@ -173,7 +180,7 @@ func main() {
 	ctx := context.Background()
 
 	// Run optimization
-	report, err := optimization.Optimize(ctx, settings)
+	report, err := optimization.Optimize(ctx, config)
 	if err != nil {
 		panic(err)
 	}
