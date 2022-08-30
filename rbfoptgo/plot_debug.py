@@ -8,9 +8,9 @@ import pathlib
 
 import pandas as pd
 
-from config import Config
-from plot import Renderer
-from report import Report
+from rbfoptgo.config import Config
+from rbfoptgo.plot import Renderer
+from rbfoptgo.report import Report
 
 debug_dir = pathlib.Path('/tmp/rbfopt_20220830_105502')
 

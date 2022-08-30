@@ -9,10 +9,10 @@ import sys
 
 import rbfopt
 
-from client import Client
-from config import Config
-from evaluator import Evaluator
-from plot import Renderer
+from rbfoptgo.client import Client
+from rbfoptgo.config import Config
+from rbfoptgo.evaluator import Evaluator
+from rbfoptgo.plot import Renderer
 
 
 def main():
@@ -40,6 +40,7 @@ def main():
     renderer = Renderer(config, evaluations, report)
     renderer.scatterplots()
     renderer.heatmaps()
+    renderer.radar()
 
 
 if __name__ == "__main__":

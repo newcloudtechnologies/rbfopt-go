@@ -9,8 +9,8 @@ from typing import List
 
 import jsons
 
-from common import Cost, ParameterValue
-from config import Parameter
+from rbfoptgo.common import Cost, ParameterValue
+from rbfoptgo.config import Parameter
 
 
 @dataclass

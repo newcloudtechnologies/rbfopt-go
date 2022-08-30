@@ -16,9 +16,9 @@ import scipy.interpolate
 import scipy.stats
 from colorhash import ColorHash
 
-import names
-from config import Config, InvalidParameterCombinationRenderPolicy
-from report import Report
+from rbfoptgo import names
+from rbfoptgo.config import Config, InvalidParameterCombinationRenderPolicy
+from rbfoptgo.report import Report
 
 
 class Renderer:
@@ -280,7 +280,6 @@ class Renderer:
         return col_val_1, col_val_2, cost_val
 
     def radar(self):
-        print(self.__report.bounds)
         # convert optimum values to df
         df = pd.DataFrame(self.__report.optimum).T
         df.columns = df.iloc[0]

@@ -46,7 +46,7 @@ setup(name='rbfopt-go',
       ],
       entry_points={
           'console_scripts': [
-              'rbfopt-go-wrapper = wrapper.main:main',
+              'rbfopt-go-wrapper = rbfoptgo.main:main',
           ]
       },
       zip_safe=False,

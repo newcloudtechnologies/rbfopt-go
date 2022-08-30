@@ -10,11 +10,11 @@ import jsons
 import numpy as np
 import pandas as pd
 
-from common import Cost, ParameterValue
-from client import Client
-from config import Config
-from report import Report
-import names
+from rbfoptgo.common import Cost, ParameterValue
+from rbfoptgo.client import Client
+from rbfoptgo.config import Config
+from rbfoptgo.report import Report
+from rbfoptgo import names
 
 
 class Evaluator:

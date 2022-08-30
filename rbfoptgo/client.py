@@ -9,9 +9,9 @@ from urllib.parse import urljoin
 import jsons
 import requests
 
-from common import Cost, ParameterValue
-from report import Report
-import names as names
+from rbfoptgo.common import Cost, ParameterValue
+from rbfoptgo.report import Report
+import rbfoptgo.names as names
 
 
 class Client:
