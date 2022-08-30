@@ -12,11 +12,13 @@ import pandas as pd
 
 from common import Cost, ParameterValue
 from client import Client
+from config import Config
 from report import Report
 import names
 
 
 class Evaluator:
+    __config: Config
     __client: Client
     __parameter_names: List[str]
     __evaluations: []
@@ -24,7 +26,8 @@ class Evaluator:
     __report: Report
     __iterations: int
 
-    def __init__(self, client: Client, parameter_names: List[str], root_dir: pathlib.Path):
+    def __init__(self, config: Config, client: Client, parameter_names: List[str], root_dir: pathlib.Path):
+        self.__config = config
         self.__client = client
         self.__parameter_names = parameter_names
         self.__evaluations = []
@@ -64,6 +67,7 @@ class Evaluator:
             fast_evaluations: int,
     ):
         report = Report(
+            bounds=self.__config.rbfopt.parameters,
             cost=cost,
             optimum=self.__np_array_to_parameter_values(optimum),
             iterations=iterations,

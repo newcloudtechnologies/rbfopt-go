@@ -23,7 +23,7 @@ def main():
     print(f"config: {config}")
 
     client = Client(config.endpoint)
-    evaluator = Evaluator(client=client, parameter_names=config.rbfopt.var_names, root_dir=root_dir)
+    evaluator = Evaluator(config=config, client=client, parameter_names=config.rbfopt.var_names, root_dir=root_dir)
 
     bb = rbfopt.RbfoptUserBlackBox(obj_funct=evaluator.estimate_cost, **config.rbfopt.user_black_box)
 
