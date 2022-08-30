@@ -9,13 +9,15 @@ from typing import List
 
 import jsons
 
-from common import Cost, ParameterValue
+from rbfoptgo.common import Cost, ParameterValue
+from rbfoptgo.config import Parameter
 
 
 @dataclass
 class Report:
-    cost: Cost
+    bounds: List[Parameter]
     optimum: List[ParameterValue]
+    cost: Cost
     iterations: int
     evaluations: int
     fast_evaluations: int

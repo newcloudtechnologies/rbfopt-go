@@ -7,4 +7,4 @@ import (
 	"path/filepath"
 )
 
-var rbfOptGoExecutable = filepath.Join(build.Default.GOPATH, "github.com/newcloudtechnologies/rbfopt-go/wrapper/main.py")
+var rbfOptGoExecutable = filepath.Join(build.Default.GOPATH, "src/github.com/newcloudtechnologies/rbfopt-go/wrapper/main.py")

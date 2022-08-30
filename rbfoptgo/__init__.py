@@ -2,4 +2,3 @@
 #  Author: Vitaly Isaev <vitaly.isaev@myoffice.team>
 #  License: https://github.com/newcloudtechnologies/rbfopt-go/blob/master/LICENSE
 
-Cost = float

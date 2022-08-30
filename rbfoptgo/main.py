@@ -9,10 +9,10 @@ import sys
 
 import rbfopt
 
-from client import Client
-from config import Config
-from evaluator import Evaluator
-from plot import Renderer
+from rbfoptgo.client import Client
+from rbfoptgo.config import Config
+from rbfoptgo.evaluator import Evaluator
+from rbfoptgo.plot import Renderer
 
 
 def main():
@@ -23,7 +23,7 @@ def main():
     print(f"config: {config}")
 
     client = Client(config.endpoint)
-    evaluator = Evaluator(client=client, parameter_names=config.rbfopt.var_names, root_dir=root_dir)
+    evaluator = Evaluator(config=config, client=client, parameter_names=config.rbfopt.var_names, root_dir=root_dir)
 
     bb = rbfopt.RbfoptUserBlackBox(obj_funct=evaluator.estimate_cost, **config.rbfopt.user_black_box)
 
@@ -40,6 +40,7 @@ def main():
     renderer = Renderer(config, evaluations, report)
     renderer.scatterplots()
     renderer.heatmaps()
+    renderer.radar()
 
 
 if __name__ == "__main__":

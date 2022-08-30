@@ -16,9 +16,9 @@ import scipy.interpolate
 import scipy.stats
 from colorhash import ColorHash
 
-import names
-from config import Config, InvalidParameterCombinationRenderPolicy
-from report import Report
+from rbfoptgo import names
+from rbfoptgo.config import Config, InvalidParameterCombinationRenderPolicy
+from rbfoptgo.report import Report
 
 
 class Renderer:
@@ -278,3 +278,27 @@ class Renderer:
         cost_val = self.__report.cost
 
         return col_val_1, col_val_2, cost_val
+
+    def radar(self):
+        # convert optimum values to df
+        df = pd.DataFrame(self.__report.optimum).T
+        df.columns = df.iloc[0]
+        df.drop(df.index[0], inplace=True)
+
+        # explanation: https://www.python-graph-gallery.com/390-basic-radar-chart
+        values = df.iloc[0].values.flatten().tolist()
+        values += values[:1]
+
+        N = len(df.iloc[0])
+        angles = [n / float(N) * 2 * np.pi for n in range(N)]
+        angles += angles[:1]
+
+        ax = plt.subplot(111, polar=True)
+        ax.set_xticks(angles[:-1], df.columns, size=14)
+
+        ax.set_rlabel_position(0)
+
+        ax.plot(angles, values, linewidth=1, linestyle='solid')
+        ax.fill(angles, values, 'b', alpha=0.1)
+
+        plt.savefig(self.__config.root_dir.joinpath('polar.png'), transparent=False)
