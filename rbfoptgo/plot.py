@@ -125,7 +125,7 @@ class Renderer:
         df = self.__prepare_df(policy=self.__config.plot.heatmap_render_policy)
 
         # TODO: one can pass a particular set of interpolation methods,
-        #  but honestly I can't see any significant between them.
+        #  but honestly I can't see any significant difference between them.
         # methods = ['none', 'nearest', 'bilinear', 'bicubic', 'spline16',
         #            'spline36', 'hanning', 'hamming', 'hermite', 'kaiser', 'quadric',
         #            'catrom', 'gaussian', 'bessel', 'mitchell', 'sinc', 'lanczos']
@@ -133,7 +133,8 @@ class Renderer:
 
         for method in methods:
             print(f"rendering heatmap matrix using method {method}")
-            self.__pairwise_heatmaps(df=df, interpolation=method)
+            # FIXME: rollback
+            # self.__pairwise_heatmaps(df=df, interpolation=method)
             self.__pairwise_heatmap_matrix(df=df, interpolation=method)
 
     def __pairwise_heatmaps(self, df: pd.DataFrame, interpolation: str):
@@ -173,12 +174,14 @@ class Renderer:
         column_names = self.__parameter_column_names
 
         # approximate size that make image look well
-        figsize = (4 * len(column_names), 4 * len(column_names))
+        figsize = (3 * len(column_names), 3 * len(column_names))
 
         fig, axes = plt.subplots(nrows=len(column_names) - 1,
                                  ncols=len(column_names) - 1,
                                  figsize=figsize,
                                  constrained_layout=True,
+                                 sharex=True,
+                                 sharey=True,
                                  )
         im = None
         for i in range(len(column_names) - 1):
@@ -187,18 +190,23 @@ class Renderer:
             for j in range(i + 1, len(column_names)):
                 col_name_1, col_name_2 = column_names[i], column_names[j]
                 ax = axes[j - 1, i]
+                print(">>>>> AX", i, j)
+                ax.set_title(f'{i},{j}')
                 im = self.__pairwise_heatmap_interpolate(
                     df=df,
                     ax=ax,
                     col_name_1=col_name_1,
                     col_name_2=col_name_2,
                     interpolation=interpolation,
+                    x_label=j == len(column_names) - 1,
+                    y_label=i == 0,
                 )
 
         fig.colorbar(im, ax=axes, shrink=0.6)
 
         figure_path = self.__config.root_dir.joinpath(f"heatmap_matrix_{interpolation}.png")
-        fig.savefig(figure_path)
+        # fig.savefig(figure_path, transparent=True, dpi=300)
+        fig.savefig(figure_path,  dpi=300)
 
     def __pairwise_heatmap_interpolate(self,
                                        df: pd.DataFrame,
@@ -206,6 +214,8 @@ class Renderer:
                                        col_name_1: str,
                                        col_name_2: str,
                                        interpolation: str,
+                                       x_label: bool,
+                                       y_label: bool,
                                        ) -> matplotlib.image.AxesImage:
         data = df[[col_name_1, col_name_2, names.Cost]]
 
@@ -215,11 +225,15 @@ class Renderer:
         # compute grid bounds
         x_min, x_max = data[col_name_1].min(), data[col_name_1].max()
         y_min, y_max = data[col_name_2].min(), data[col_name_2].max()
+        print(col_name_1, x_min, x_max)
+        print(col_name_2, y_min, y_max)
         (cost_min, cost_max) = self.__cost_bounds(df)
-        samples = 100
+        samples = 10
         x_step = (x_max - x_min) / samples
         y_step = (y_max - y_min) / samples
         grid_x, grid_y = np.mgrid[x_min:x_max:x_step, y_min:y_max:y_step]
+        # print("GRID_X", grid_x)
+        # print("GRID_Y", grid_y)
 
         # interpolate data
         points = data[[col_name_1, col_name_2]]
@@ -229,10 +243,25 @@ class Renderer:
 
         values = data[names.Cost]
         xi = (grid_x, grid_y)
-        grid = scipy.interpolate.griddata(points, values, xi, method='cubic')
+        grid = scipy.interpolate.griddata(
+            points,
+            values,
+            xi,
+            method='cubic',
+        )
+
+        # print("EXTENT", [x_min, x_max, y_min, y_max])
 
         # render interpolated grid
-        im = ax.imshow(grid.T, cmap='jet', origin='lower', interpolation=interpolation, vmin=cost_min, vmax=cost_max)
+        im = ax.imshow(
+            grid.T,
+            cmap='jet',
+            origin='lower',
+            interpolation=interpolation,
+            vmin=cost_min,
+            vmax=cost_max,
+            # extent=[y_min, y_max, x_min, x_max],
+        )
 
         # scale ticks
         x_scale, y_scale = (x_max - x_min) / samples, (y_max - y_min) / samples
@@ -245,8 +274,12 @@ class Renderer:
         ax.annotate("{:.2f}".format(opt_val), (opt_x, opt_y))
 
         # assign axes labels
-        ax.set_xlabel(col_name_1, fontsize=14)
-        ax.set_ylabel(col_name_2, fontsize=14)
+        if x_label:
+            ax.tick_params(axis='x', which='major', labelsize=14)
+            ax.set_xlabel(col_name_1, fontsize=16)
+        if y_label:
+            ax.tick_params(axis='y', which='major', labelsize=14)
+            ax.set_ylabel(col_name_2, fontsize=16)
 
         return im
 

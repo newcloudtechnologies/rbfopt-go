@@ -7,12 +7,15 @@
 import pathlib
 
 import pandas as pd
+from matplotlib import rc
 
 from rbfoptgo.config import Config
 from rbfoptgo.plot import Renderer
 from rbfoptgo.report import Report
 
-debug_dir = pathlib.Path('/tmp/rbfopt_20220830_105502')
+rc('font', **{'family': 'serif', 'serif': ['Roboto']})
+
+debug_dir = pathlib.Path('/tmp/rbfopt_example')
 
 
 def main():
@@ -20,7 +23,7 @@ def main():
     evaluations = pd.read_csv(debug_dir.joinpath("evaluations.csv"))
     report = Report.load_from_file(debug_dir.joinpath("report.json"))
     renderer = Renderer(config=config, df=evaluations, report=report)
-    renderer.radar()
+    renderer.heatmaps()
 
 
 if __name__ == '__main__':
