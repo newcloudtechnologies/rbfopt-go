@@ -180,8 +180,6 @@ class Renderer:
                                  ncols=len(column_names) - 1,
                                  figsize=figsize,
                                  constrained_layout=True,
-                                 sharex=True,
-                                 sharey=True,
                                  )
         im = None
         for i in range(len(column_names) - 1):
@@ -190,8 +188,6 @@ class Renderer:
             for j in range(i + 1, len(column_names)):
                 col_name_1, col_name_2 = column_names[i], column_names[j]
                 ax = axes[j - 1, i]
-                print(">>>>> AX", i, j)
-                ax.set_title(f'{i},{j}')
                 im = self.__pairwise_heatmap_interpolate(
                     df=df,
                     ax=ax,
@@ -202,11 +198,12 @@ class Renderer:
                     y_label=i == 0,
                 )
 
-        fig.colorbar(im, ax=axes, shrink=0.6)
+        cbar = fig.colorbar(im, ax=axes, shrink=0.6)
+        cbar.ax.tick_params(labelsize=18)
 
         figure_path = self.__config.root_dir.joinpath(f"heatmap_matrix_{interpolation}.png")
         # fig.savefig(figure_path, transparent=True, dpi=300)
-        fig.savefig(figure_path,  dpi=300)
+        fig.savefig(figure_path, dpi=300)
 
     def __pairwise_heatmap_interpolate(self,
                                        df: pd.DataFrame,
@@ -223,91 +220,63 @@ class Renderer:
         data = data.groupby([col_name_1, col_name_2])[names.Cost].agg(lambda x: x.min()).reset_index()
 
         # compute grid bounds
-        x_min, x_max = data[col_name_1].min(), data[col_name_1].max()
-        y_min, y_max = data[col_name_2].min(), data[col_name_2].max()
-        print(col_name_1, x_min, x_max)
-        print(col_name_2, y_min, y_max)
-        (cost_min, cost_max) = self.__cost_bounds(df)
-        samples = 10
-        x_step = (x_max - x_min) / samples
-        y_step = (y_max - y_min) / samples
-        grid_x, grid_y = np.mgrid[x_min:x_max:x_step, y_min:y_max:y_step]
-        # print("GRID_X", grid_x)
-        # print("GRID_Y", grid_y)
+        xs0 = data[col_name_1]
+        ys0 = data[col_name_2]
+        x_min, x_max = xs0.min(), xs0.max()
+        y_min, y_max = ys0.min(), ys0.max()
+        extent = [x_min, x_max, y_min, y_max]
+        N = 100j
+        xs, ys = np.mgrid[x_min:x_max:N, y_min:y_max:N]
+
+        zs0 = data[names.Cost]
+
+        # if points.shape[0] < 4:
+        #     raise ValueError('Too little data to render grid, try to increase number of iterations')
 
         # interpolate data
-        points = data[[col_name_1, col_name_2]]
-
-        if points.shape[0] < 4:
-            raise ValueError('Too little data to render grid, try to increase number of iterations')
-
-        values = data[names.Cost]
-        xi = (grid_x, grid_y)
-        grid = scipy.interpolate.griddata(
-            points,
-            values,
-            xi,
+        resampled = scipy.interpolate.griddata(
+            points=(xs0, ys0),
+            values=zs0,
+            xi=(xs, ys),
             method='cubic',
         )
 
-        # print("EXTENT", [x_min, x_max, y_min, y_max])
-
         # render interpolated grid
+        (cost_min, cost_max) = self.__cost_bounds(df)
         im = ax.imshow(
-            grid.T,
+            resampled.T,
             cmap='jet',
             origin='lower',
             interpolation=interpolation,
             vmin=cost_min,
             vmax=cost_max,
-            # extent=[y_min, y_max, x_min, x_max],
+            extent=extent,
         )
 
-        # scale ticks
-        x_scale, y_scale = (x_max - x_min) / samples, (y_max - y_min) / samples
-        ax.xaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(self.__tick_scaler(x_scale)))
-        ax.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(self.__tick_scaler(y_scale)))
-
         # draw point with optimum
-        opt_x, opt_y, opt_val = self.__derive_optimum_coordinates(col_name_1, col_name_2, x_scale, y_scale)
+        opt_x, opt_y, opt_val = self.__derive_optimum_coordinates(col_name_1, col_name_2, )
         ax.scatter(opt_x, opt_y, color='red', marker='o', s=100)
-        ax.annotate("{:.2f}".format(opt_val), (opt_x, opt_y))
+        ax.annotate("{:.2f}".format(opt_val), (opt_x, opt_y), size=14)
+
+        # borders
+        ax.set_xlim(left=x_min, right=x_max)
+        ax.set_ylim(bottom=y_min, top=y_max)
 
         # assign axes labels
+        ax.tick_params(axis='x', which='major', labelsize=14)
+        ax.tick_params(axis='y', which='major', labelsize=14)
         if x_label:
-            ax.tick_params(axis='x', which='major', labelsize=14)
             ax.set_xlabel(col_name_1, fontsize=16)
         if y_label:
-            ax.tick_params(axis='y', which='major', labelsize=14)
             ax.set_ylabel(col_name_2, fontsize=16)
 
         return im
 
-    @staticmethod
-    def __tick_scaler(scale) -> Callable[[Any, Any], str]:
-        def tick_formater(val, _) -> str:
-            tick = val * scale
-            if tick.is_integer():
-                return str(int(tick))
-            else:
-                # FIXME: it's a hodgie (индусский) code now - write smart algorithm instead of that
-                if tick >= 100:
-                    return str(int(tick))
-                elif tick >= 10:
-                    return "{:.1f}".format(tick)
-                elif tick >= 1:
-                    return "{:.2f}".format(tick)
-                else:
-                    return "{:.3f}".format(tick)
-
-        return tick_formater
-
     def __derive_optimum_coordinates(self,
                                      col_name_1: str, col_name_2: str,
-                                     col_scale_1: float, col_scale_2: float,
                                      ) -> (float, float, float):
-        col_val_1 = self.__report.optimum_argument(col_name_1) / col_scale_1
-        col_val_2 = self.__report.optimum_argument(col_name_2) / col_scale_2
+        col_val_1 = self.__report.optimum_argument(col_name_1)
+        col_val_2 = self.__report.optimum_argument(col_name_2)
         cost_val = self.__report.cost
 
         return col_val_1, col_val_2, cost_val
