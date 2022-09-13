@@ -4,7 +4,6 @@
 
 import functools
 import typing
-from typing import Any, Callable
 
 import matplotlib.axes
 import matplotlib.image
@@ -14,6 +13,7 @@ import numpy as np
 import pandas as pd
 import scipy.interpolate
 import scipy.stats
+from adjustText import adjust_text
 from colorhash import ColorHash
 
 from rbfoptgo import names
@@ -25,11 +25,13 @@ class Renderer:
     __df: pd.DataFrame
     __report: Report
     __config: Config
+    __transparent: bool
 
-    def __init__(self, config: Config, df: pd.DataFrame, report: Report):
+    def __init__(self, config: Config, df: pd.DataFrame, report: Report, transparent: bool = False):
         self.__df = df.loc[:, df.columns != names.Iteration]
         self.__report = report
         self.__config = config
+        self.__transparent = transparent
 
     def __prepare_df(self, policy: InvalidParameterCombinationRenderPolicy) -> pd.DataFrame:
         match policy:
@@ -94,7 +96,7 @@ class Renderer:
 
         suffix = "only_optimal_values" if only_optimal_values else "all_values"
         figure_path = self.__config.root_dir.joinpath(f"scatterplot_{suffix}.png")
-        fig.savefig(figure_path)
+        fig.savefig(figure_path, transparent=self.__transparent)
 
     def __render_scatterplot(self, ax: matplotlib.axes.Axes, col_name: str, only_optimal_values: bool):
         df = self.__prepare_df(policy=self.__config.plot.scatter_plot_policy)
@@ -133,8 +135,7 @@ class Renderer:
 
         for method in methods:
             print(f"rendering heatmap matrix using method {method}")
-            # FIXME: rollback
-            # self.__pairwise_heatmaps(df=df, interpolation=method)
+            self.__pairwise_heatmaps(df=df, interpolation=method)
             self.__pairwise_heatmap_matrix(df=df, interpolation=method)
 
     def __pairwise_heatmaps(self, df: pd.DataFrame, interpolation: str):
@@ -168,7 +169,7 @@ class Renderer:
         fig.colorbar(im, ax=ax, shrink=0.6)
 
         figure_path = self.__config.root_dir.joinpath(f"heatmap_{col_name_1}_{col_name_2}_{interpolation}.png")
-        fig.savefig(figure_path)
+        fig.savefig(figure_path, transparent=self.__transparent)
 
     def __pairwise_heatmap_matrix(self, df: pd.DataFrame, interpolation: str):
         column_names = self.__parameter_column_names
@@ -202,8 +203,7 @@ class Renderer:
         cbar.ax.tick_params(labelsize=18)
 
         figure_path = self.__config.root_dir.joinpath(f"heatmap_matrix_{interpolation}.png")
-        # fig.savefig(figure_path, transparent=True, dpi=300)
-        fig.savefig(figure_path, dpi=300)
+        fig.savefig(figure_path, transparent=self.__transparent, dpi=300)
 
     def __pairwise_heatmap_interpolate(self,
                                        df: pd.DataFrame,
@@ -219,6 +219,10 @@ class Renderer:
         # select the minimums
         data = data.groupby([col_name_1, col_name_2])[names.Cost].agg(lambda x: x.min()).reset_index()
 
+        # check if data is sufficient
+        if data.shape[0] < 4:
+            raise ValueError('Too little data to render grid, try to increase number of iterations')
+
         # compute grid bounds
         xs0 = data[col_name_1]
         ys0 = data[col_name_2]
@@ -229,9 +233,6 @@ class Renderer:
         xs, ys = np.mgrid[x_min:x_max:N, y_min:y_max:N]
 
         zs0 = data[names.Cost]
-
-        # if points.shape[0] < 4:
-        #     raise ValueError('Too little data to render grid, try to increase number of iterations')
 
         # interpolate data
         resampled = scipy.interpolate.griddata(
@@ -255,12 +256,28 @@ class Renderer:
 
         # draw point with optimum
         opt_x, opt_y, opt_val = self.__derive_optimum_coordinates(col_name_1, col_name_2, )
+        if opt_val > 100:
+            opt_val = int(opt_val)
+
+        t = ax.text(opt_x, opt_y, opt_val, ha='center', va='center', fontsize=18)
+        t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='red'))
+
+        adjust_text(
+            texts=[t],
+            ax=ax,
+            arrowprops=dict(arrowstyle='->', color='red'),
+            expand_text=(2, 2),
+            expand_align=(2, 2),
+            expand_objects=(2, 2),
+            expand_points=(2, 2),
+        )
         ax.scatter(opt_x, opt_y, color='red', marker='o', s=100)
-        ax.annotate("{:.2f}".format(opt_val), (opt_x, opt_y), size=14)
 
         # borders
-        ax.set_xlim(left=x_min, right=x_max)
-        ax.set_ylim(bottom=y_min, top=y_max)
+        x_gap = (x_max - x_min) * 0.025
+        y_gap = (y_max - y_min) * 0.025
+        ax.set_xlim(left=x_min-x_gap, right=x_max+x_gap)
+        ax.set_ylim(bottom=y_min-y_gap, top=y_max+y_gap)
 
         # assign axes labels
         ax.tick_params(axis='x', which='major', labelsize=14)
@@ -303,4 +320,4 @@ class Renderer:
         ax.plot(angles, values, linewidth=1, linestyle='solid')
         ax.fill(angles, values, 'b', alpha=0.1)
 
-        plt.savefig(self.__config.root_dir.joinpath('polar.png'), transparent=False)
+        plt.savefig(self.__config.root_dir.joinpath('polar.png'), transparent=self.__transparent)
