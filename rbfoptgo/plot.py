@@ -202,7 +202,7 @@ class Renderer:
                 )
 
         cbar = fig.colorbar(im, ax=axes, shrink=0.6)
-        cbar.ax.tick_params(labelsize=18)
+        cbar.ax.tick_params(labelsize=24)
 
         figure_path = self.__config.root_dir.joinpath(f"heatmap_matrix_{interpolation}.png")
         fig.savefig(figure_path, transparent=self.__transparent, dpi=300)
@@ -258,10 +258,8 @@ class Renderer:
 
         # draw point with optimum
         opt_x, opt_y, opt_val = self.__derive_optimum_coordinates(col_name_1, col_name_2, )
-        if opt_val > 100:
-            opt_val = int(opt_val)
 
-        t = ax.text(opt_x, opt_y, opt_val, ha='center', va='center', fontsize=18)
+        t = ax.text(opt_x, opt_y, opt_val, ha='center', va='center', fontsize=20)
         t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='red'))
 
         adjust_text(
@@ -282,12 +280,12 @@ class Renderer:
         ax.set_ylim(bottom=y_min-y_gap, top=y_max+y_gap)
 
         # assign axes labels
-        ax.tick_params(axis='x', which='major', labelsize=14)
-        ax.tick_params(axis='y', which='major', labelsize=14)
+        ax.tick_params(axis='x', which='major', labelsize=16)
+        ax.tick_params(axis='y', which='major', labelsize=16)
         if x_label:
-            ax.set_xlabel(col_name_1, fontsize=16)
+            ax.set_xlabel(col_name_1, fontsize=18)
         if y_label:
-            ax.set_ylabel(col_name_2, fontsize=16)
+            ax.set_ylabel(col_name_2, fontsize=18)
 
         return im
 
@@ -297,6 +295,20 @@ class Renderer:
         col_val_1 = self.__report.optimum_argument(col_name_1)
         col_val_2 = self.__report.optimum_argument(col_name_2)
         cost_val = self.__report.cost
+
+        # There must be a much better way to achieve that, PRs are welcome
+        if cost_val > 100:
+            cost_val = int(cost_val)
+        if cost_val > 10:
+            cost_val = np.around(cost_val, 1)
+        if cost_val > 1:
+            cost_val = np.around(cost_val, 2)
+        if cost_val > 0.1:
+            cost_val = np.around(cost_val, 3)
+        if cost_val > 0.01:
+            cost_val = np.around(cost_val, 4)
+        if cost_val > 0.001:
+            cost_val = np.around(cost_val, 5)
 
         return col_val_1, col_val_2, cost_val
 
