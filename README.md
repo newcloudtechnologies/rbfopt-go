@@ -238,7 +238,7 @@ formed by all possible pairs of parameters.
 This matrix of plots helps to find out the nature of interaction
 of parameters between each other (and their influence on the cost function).
 
-![pairwise heatmap matrix](/docs/pairwise_heatmap_matrix.png)
+![pairwise heatmap matrix](/docs/heatmap_matrix_hamming.png)
 
 ## Limitations
 
