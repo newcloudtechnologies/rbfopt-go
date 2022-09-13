@@ -297,17 +297,18 @@ class Renderer:
         cost_val = self.__report.cost
 
         # There must be a much better way to achieve that, PRs are welcome
-        if cost_val > 100:
-            cost_val = int(cost_val)
-        if cost_val > 10:
+        cost_val_abs = np.abs(cost_val)
+        if cost_val_abs > 100:
+            cost_val_abs = int(cost_val)
+        if cost_val_abs > 10:
             cost_val = np.around(cost_val, 1)
-        if cost_val > 1:
+        if cost_val_abs > 1:
             cost_val = np.around(cost_val, 2)
-        if cost_val > 0.1:
+        if cost_val_abs > 0.1:
             cost_val = np.around(cost_val, 3)
-        if cost_val > 0.01:
+        if cost_val_abs > 0.01:
             cost_val = np.around(cost_val, 4)
-        if cost_val > 0.001:
+        if cost_val_abs > 0.001:
             cost_val = np.around(cost_val, 5)
 
         return col_val_1, col_val_2, cost_val
