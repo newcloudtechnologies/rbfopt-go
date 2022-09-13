@@ -164,6 +164,8 @@ class Renderer:
             col_name_1=col_name_1,
             col_name_2=col_name_2,
             interpolation=interpolation,
+            x_label=True,
+            y_label=True,
         )
 
         fig.colorbar(im, ax=ax, shrink=0.6)
