@@ -19,6 +19,10 @@ debug_dir = pathlib.Path('/home/isaev/trouble/optimization/20220908_2330_HDD_SSD
 
 
 def main():
+    """
+    An entrypoint to plotting debug script. Use only for testing purposes.
+    :return:
+    """
     config = Config.from_file(debug_dir.joinpath("config.json"))
     evaluations = pd.read_csv(debug_dir.joinpath("evaluations.csv"))
     report = Report.load_from_file(debug_dir.joinpath("report.json"))
