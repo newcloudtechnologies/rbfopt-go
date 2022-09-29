@@ -10,5 +10,6 @@ const rbfOptGoExecutable = "rbfopt-go-wrapper"
 
 func makeCmd(rootDir string) *exec.Cmd {
 	cmd := exec.Command(rbfOptGoExecutable, rootDir)
+
 	return cmd
 }

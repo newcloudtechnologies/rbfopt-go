@@ -23,11 +23,11 @@ type server struct {
 }
 
 // Estimate Cost
-
 func (s *server) estimateCostHandler(w http.ResponseWriter, r *http.Request) {
 	s.middleware(w, r, s.estimateCost)
 }
 
+//nolint:dupl // TODO: need to use more advanced web framework
 func (s *server) estimateCost(ctx context.Context, w http.ResponseWriter, r *http.Request) (int, error) {
 	if r.Method != http.MethodGet {
 		return http.StatusMethodNotAllowed, errors.New("invalid method")
@@ -55,11 +55,11 @@ func (s *server) estimateCost(ctx context.Context, w http.ResponseWriter, r *htt
 }
 
 // Register report
-
 func (s *server) registerReportHandler(w http.ResponseWriter, r *http.Request) {
 	s.middleware(w, r, s.registerReport)
 }
 
+//nolint:dupl // TODO: need to use more advanced web framework
 func (s *server) registerReport(
 	ctx context.Context,
 	w http.ResponseWriter,

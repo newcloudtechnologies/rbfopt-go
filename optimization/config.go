@@ -33,6 +33,9 @@ const (
 	RandCorners
 )
 
+// ErrUnknownInitStrategy is returned when user set unknown InitStrategy
+var ErrUnknownInitStrategy = errors.New("unknown strategy")
+
 // MarshalJSON renders InitStrategy to JSON.
 func (s InitStrategy) MarshalJSON() ([]byte, error) {
 	switch s {
@@ -47,7 +50,7 @@ func (s InitStrategy) MarshalJSON() ([]byte, error) {
 	case RandCorners:
 		return []byte("\"rand_corners\""), nil
 	default:
-		return nil, fmt.Errorf("unknown InitStarategy: %v", s)
+		return nil, errors.Wrapf(ErrUnknownInitStrategy, "%v", s)
 	}
 }
 
@@ -150,7 +153,6 @@ func (c *PlotConfig) validate() error {
 	return nil
 }
 
-// Config - a top-level configuration structure
 type Config struct {
 	// RootDir - place to store reports and other things
 	// (optimizer will create it if it doesn't exist).
@@ -158,13 +160,13 @@ type Config struct {
 	// Endpoint for the server that will work as a middleware
 	Endpoint string `json:"endpoint"`
 	// RBFOpt - config of rbfopt library itself
-	RBFOpt *RBFOptConfig `json:"rbfopt"`
+	RBFOpt *RBFOptConfig `json:"rbfopt"` //nolint:tagliatelle // RBFOpt is a well-known name, no underscore is needed
 	// PlotConfig - config of plots made by wrapper
 	Plot *PlotConfig `json:"plot"`
 }
 
 func (c *Config) validate() error {
-	if len(c.RootDir) == 0 {
+	if c.RootDir == "" {
 		return errors.New("field RootDir is empty")
 	}
 

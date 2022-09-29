@@ -38,7 +38,6 @@ func (r *rbfOptWrapper) run() error {
 		return errors.Wrap(err, "write file")
 	}
 
-	//nolint:gosec
 	cmd := makeCmd(r.config.RootDir)
 	if err := r.executeCommand(r.ctx, cmd); err != nil {
 		return errors.Wrap(err, "execute command")

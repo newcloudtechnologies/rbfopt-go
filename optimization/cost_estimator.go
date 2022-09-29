@@ -51,7 +51,7 @@ func (ce *costEstimator) estimateCost(ctx context.Context, request *estimateCost
 
 	if cost >= ce.config.RBFOpt.InvalidParameterCombinationCost {
 		return nil, errors.Wrapf(
-			ErrTooHighObservedCost,
+			ErrTooLowInvalidParameterCombinationCost,
 			"cost=%v, invalid_parameter_combination_cost=%v",
 			cost, ce.config.RBFOpt.InvalidParameterCombinationCost,
 		)
