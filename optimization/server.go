@@ -47,7 +47,7 @@ func (s *server) estimateCost(ctx context.Context, w http.ResponseWriter, r *htt
 	}
 
 	encoder := json.NewEncoder(w)
-	if err := encoder.Encode(response); err != nil {
+	if err = encoder.Encode(response); err != nil {
 		return http.StatusInternalServerError, errors.Wrap(err, "json encode")
 	}
 
@@ -83,7 +83,7 @@ func (s *server) registerReport(
 	}
 
 	encoder := json.NewEncoder(w)
-	if err := encoder.Encode(response); err != nil {
+	if err = encoder.Encode(response); err != nil {
 		return http.StatusInternalServerError, errors.Wrap(err, "json encode")
 	}
 
@@ -125,8 +125,8 @@ func (s *server) annotateLogger(r *http.Request) logr.Logger {
 	)
 }
 
-func (s *server) quit() {
-	if err := s.httpServer.Shutdown(context.Background()); err != nil {
+func (s *server) quit(ctx context.Context) {
+	if err := s.httpServer.Shutdown(ctx); err != nil {
 		s.logger.Error(err, "http server shutdown")
 	}
 }

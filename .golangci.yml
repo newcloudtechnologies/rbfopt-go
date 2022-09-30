@@ -143,7 +143,7 @@ linters-settings:
     # The maximal average package complexity.
     # If it's higher than 0.0 (float) the check is enabled
     # Default: 0.0
-    package-average: 0.5
+    package-average: 5
     # Should ignore tests.
     # Default: false
     skip-tests: true
@@ -381,15 +381,15 @@ linters-settings:
   gocognit:
     # Minimal code complexity to report
     # Default: 30 (but we recommend 10-20)
-    min-complexity: 10
+    min-complexity: 15
 
   goconst:
     # Minimal length of string constant.
     # Default: 3
-    min-len: 2
+    min-len: 10
     # Minimum occurrences of constant string count to trigger issue.
     # Default: 3
-    min-occurrences: 2
+    min-occurrences: 5
     # Ignore test files.
     # Default: false
     ignore-tests: true
@@ -417,13 +417,13 @@ linters-settings:
     enabled-checks:
       - nestingReduce
       - unnamedResult
-      - ruleguard
       - truncateCmp
 
     # Which checks should be disabled; can't be combined with 'enabled-checks'.
     # Default: []
     disabled-checks:
       - regexpMust
+      - ruleguard
 
     # Enable multiple checks by tags, run `GL_DEBUG=gocritic golangci-lint run` to see all tags and checks.
     # See https://github.com/go-critic/go-critic#usage -> section "Tags".
@@ -648,6 +648,7 @@ linters-settings:
     # Default: []
     ignored-numbers:
       - '0666'
+      - '0600'
       - '0755'
       - '42'
     # List of file patterns to exclude from analysis.
@@ -1017,10 +1018,10 @@ linters-settings:
   grouper:
     # Require the use of a single global 'const' declaration only.
     # Default: false
-    const-require-single-const: true
+    const-require-single-const: false
     # Require the use of grouped global 'const' declarations.
     # Default: false
-    const-require-grouping: true
+    const-require-grouping: false
 
     # Require the use of a single 'import' declaration only.
     # Default: false
@@ -1031,17 +1032,17 @@ linters-settings:
 
     # Require the use of a single global 'type' declaration only.
     # Default: false
-    type-require-single-type: true
+    type-require-single-type: false
     # Require the use of grouped global 'type' declarations.
     # Default: false
-    type-require-grouping: true
+    type-require-grouping: false
 
     # Require the use of a single global 'var' declaration only.
     # Default: false
-    var-require-single-var: true
+    var-require-single-var: false
     # Require the use of grouped global 'var' declarations.
     # Default: false
-    var-require-grouping: true
+    var-require-grouping: false
 
   ifshort:
     # Maximum length of variable declaration measured in number of lines, after which linter won't suggest using short syntax.
@@ -1099,8 +1100,8 @@ linters-settings:
       - (or|er)$
 
     # reject-list of interfaces
-    reject:
-      - github.com\/user\/package\/v4\.Type
+#    reject:
+#      - github.com\/user\/package\/v4\.Type
 
   lll:
     # Max line length, lines longer will be reported.
@@ -1115,7 +1116,7 @@ linters-settings:
     # Show functions with maintainability index lower than N.
     # A high index indicates better maintainability (it's kind of the opposite of complexity).
     # Default: 20
-    under: 100
+    under: 20
 
   makezero:
     # Allow only slices initialized with a length of zero.
@@ -1144,7 +1145,7 @@ linters-settings:
   nestif:
     # Minimal complexity of if statements to report.
     # Default: 5
-    min-complexity: 4
+    min-complexity: 5
 
   nilnil:
     # Checks that there is no simultaneous return of `nil` error and an invalid value.
@@ -1265,7 +1266,7 @@ linters-settings:
         arguments:
           - maxLitCount: "3"
             allowStrs: '""'
-            allowInts: "0,1,2"
+            allowInts: "0,1,2,0600,0755"
             allowFloats: "0.0,0.,1.0,1.,2.0,2."
       # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#argument-limit
       - name: argument-limit
@@ -1301,7 +1302,7 @@ linters-settings:
       - name: cognitive-complexity
         severity: warning
         disabled: false
-        arguments: [ 7 ]
+        arguments: [ 12 ]
       # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#confusing-naming
       - name: confusing-naming
         severity: warning
@@ -1326,7 +1327,7 @@ linters-settings:
       - name: cyclomatic
         severity: warning
         disabled: false
-        arguments: [ 3 ]
+        arguments: [ 10 ]
       # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#datarace
       - name: datarace
         severity: warning
@@ -1387,9 +1388,13 @@ linters-settings:
       # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#file-header
       - name: file-header
         severity: warning
-        disabled: false
+        disabled: true
         arguments:
-          - This is the text that must appear at the top of source files.
+          - "/*
+              * Copyright (c) New Cloud Technologies, Ltd. 2013-2022.
+              * Author: Vitaly Isaev <vitaly.isaev@myoffice.team>
+              * License: https://github.com/newcloudtechnologies/rbfopt-go/blob/master/LICENSE
+            */"
       # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#flag-parameter
       - name: flag-parameter
         severity: warning
@@ -1403,7 +1408,7 @@ linters-settings:
       - name: function-length
         severity: warning
         disabled: false
-        arguments: [ 10, 0 ]
+        arguments: [ 25, 0 ]
       # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#get-return
       - name: get-return
         severity: warning
@@ -1439,11 +1444,11 @@ linters-settings:
       - name: line-length-limit
         severity: warning
         disabled: false
-        arguments: [ 80 ]
+        arguments: [ 120 ]
       # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#max-public-structs
       - name: max-public-structs
         severity: warning
-        disabled: false
+        disabled: true
         arguments: [ 3 ]
       # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#modifies-parameter
       - name: modifies-parameter
@@ -1619,8 +1624,8 @@ linters-settings:
       rules:
         # Any struct tag type can be used.
         # Support string case: `camel`, `pascal`, `kebab`, `snake`, `goCamel`, `goPascal`, `goKebab`, `goSnake`, `upper`, `lower`
-        json: camel
-        yaml: camel
+        json: snake
+        yaml: snake
         xml: camel
         bson: camel
         avro: snake
@@ -1727,11 +1732,11 @@ linters-settings:
     # The longest distance, in source lines, that is being considered a "small scope".
     # Variables used in at most this many lines will be ignored.
     # Default: 5
-    max-distance: 6
+    max-distance: 10
     # The minimum length of a variable's name that is considered "long".
     # Variable names that are at least this long will be ignored.
     # Default: 3
-    min-name-length: 2
+    min-name-length: 1
     # Check method receivers.
     # Default: false
     check-receiver: true
@@ -1878,12 +1883,18 @@ linters-settings:
 
 linters:
   enable-all: true
-  fast: true
+  fast: false
   disable:
     - exhaustivestruct
     - paralleltest
     - thelper
     - godox
+    - goheader
+    - gomodguard
+    - containedctx
+    - importas
+    - decorder
+    - contextcheck
 
   # Enable presets.
   # https://golangci-lint.run/usage/linters

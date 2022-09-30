@@ -34,19 +34,19 @@ func (r *rbfOptWrapper) run() error {
 		return errors.Wrap(err, "marshal json")
 	}
 
-	if err := ioutil.WriteFile(path, data, 0600); err != nil {
+	if err = ioutil.WriteFile(path, data, 0600); err != nil {
 		return errors.Wrap(err, "write file")
 	}
 
 	cmd := makeCmd(r.config.RootDir)
-	if err := r.executeCommand(r.ctx, cmd); err != nil {
+	if err = r.executeCommand(r.ctx, cmd); err != nil {
 		return errors.Wrap(err, "execute command")
 	}
 
 	return nil
 }
 
-func (r *rbfOptWrapper) executeCommand(ctx context.Context, cmd *exec.Cmd) error {
+func (*rbfOptWrapper) executeCommand(ctx context.Context, cmd *exec.Cmd) error {
 	logger, err := logr.FromContext(ctx)
 	if err != nil {
 		return errors.Wrap(err, "logr from context")
@@ -69,7 +69,7 @@ func (r *rbfOptWrapper) executeCommand(ctx context.Context, cmd *exec.Cmd) error
 	if stdoutBuf.Len() > 0 {
 		logger.V(0).Info("subprocess stdout")
 
-		_, err := io.Copy(os.Stdout, stdoutBuf)
+		_, err = io.Copy(os.Stdout, stdoutBuf)
 		if err != nil {
 			return errors.Wrap(err, "copy")
 		}
@@ -78,7 +78,7 @@ func (r *rbfOptWrapper) executeCommand(ctx context.Context, cmd *exec.Cmd) error
 	if stderrBuf.Len() > 0 {
 		logger.Info("subprocess stderr")
 
-		_, err := io.Copy(os.Stdout, stderrBuf)
+		_, err = io.Copy(os.Stdout, stderrBuf)
 		if err != nil {
 			return errors.Wrap(err, "copy")
 		}

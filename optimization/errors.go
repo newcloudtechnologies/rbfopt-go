@@ -15,12 +15,14 @@ var (
 	// CostFunction must return MaxCost and ErrInvalidParameterCombination if it happened.
 	ErrInvalidParameterCombination = errors.New("invalid parameter combination")
 
-	// ErrTooHighInvalidParameterCombinationCost is returned when one sets too high InvalidParameterCombinationCost setting
+	// ErrTooHighInvalidParameterCombinationCost is returned when one sets too high
+	// InvalidParameterCombinationCost setting
 	ErrTooHighInvalidParameterCombinationCost = errors.New(
 		"too high value of InvalidParameterCombinationCost: " +
 			"visit https://github.com/coin-or/rbfopt/issues/28#issuecomment-629720480 to pick a good one")
 
-	// ErrTooLowInvalidParameterCombinationCost is returned when one sets too low InvalidParameterCombinationCost setting
+	// ErrTooLowInvalidParameterCombinationCost is returned when one sets too low
+	// InvalidParameterCombinationCost setting
 	ErrTooLowInvalidParameterCombinationCost = errors.New(
 		"observed cost value is higher than invalid parameter combination cost",
 	)
