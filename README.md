@@ -1,3 +1,9 @@
+[![Go Reference](https://pkg.go.dev/badge/github.com/newcloudtechnologies/rbfopt-go/.svg)](https://pkg.go.dev/github.com/newcloudtechnologies/rbfopt-go/)
+[![Go Report Card](https://goreportcard.com/badge/github.com/newcloudtechnologies/rbfopt-go)](https://goreportcard.com/report/github.com/newcloudtechnologies/rbfopt-go)
+![CI](https://github.com/newcloudtechnologies/rbfopt-go/actions/workflows/CI.yml/badge.svg)
+![Go](https://img.shields.io/badge/Go-71.9%25-brightgreen)
+![Python](./.coverage.python.svg)
+
 # RBFOpt-go
 
 Find better configuration of your Go service using modern derivative-free optimization algorithms.

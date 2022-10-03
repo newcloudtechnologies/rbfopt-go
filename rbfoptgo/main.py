@@ -16,6 +16,10 @@ from rbfoptgo.plot import Renderer
 
 
 def main():
+    """
+    An entrypoint to RBFOpt optimizer
+    :return:
+    """
     # prepare configuration
     root_dir = pathlib.Path(sys.argv[1])
     config_path = root_dir.joinpath("config.json")

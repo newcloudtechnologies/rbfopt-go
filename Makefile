@@ -1,12 +1,21 @@
+deps:
+	pip install pylint
+	wget https://github.com/golangci/golangci-lint/releases/download/v1.49.0/golangci-lint-1.49.0-linux-amd64.tar.gz -O golangci-lint.tar.gz
+	tar xvf golangci-lint.tar.gz
+	mv golangci-lint-1.49.0-linux-amd64/golangci-lint ${GOPATH}/bin/golangci-lint-1.49.0
+	rm -rf golangci*
+
 clean:
 	rm -rf build dist rbfopt_go.egg-info
 	rm -rf /tmp/rbf*
 
 test:
-	go test -tags testing -count=1 -v ./...
+	go test -tags=testing -count=1 -v -cover ./...  -coverprofile=coverage.out -coverpkg ./...
+	go tool cover -func=coverage.out -o=coverage.out
 
 lint:
-	golangci-lint run ./...
+	golangci-lint-1.49.0 run ./...
+	pylint ./rbfoptgo
 
 python_release_build:
 	rm -rf ./build/* ./dist/*

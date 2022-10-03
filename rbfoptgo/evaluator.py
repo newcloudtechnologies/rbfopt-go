@@ -2,11 +2,9 @@
 #  Author: Vitaly Isaev <vitaly.isaev@myoffice.team>
 #  License: https://github.com/newcloudtechnologies/rbfopt-go/blob/master/LICENSE
 
-import json
 import pathlib
 from typing import List
 
-import jsons
 import numpy as np
 import pandas as pd
 
@@ -18,6 +16,9 @@ from rbfoptgo import names
 
 
 class Evaluator:
+    """
+    Evaluator is responsible for cost function estimation. It performs HTTP calls to the Golang part of a library.
+    """
     __config: Config
     __client: Client
     __parameter_names: List[str]
@@ -43,13 +44,17 @@ class Evaluator:
         return parameter_values
 
     def estimate_cost(self, raw_values: np.ndarray) -> Cost:
+        """
+        :param raw_values: vector of cost function arguments
+        :return: cost function particular value
+        """
         self.__iterations += 1
 
         parameter_values = self.__np_array_to_parameter_values(raw_values)
         cost, invalid_parameter_combination = self.__client.estimate_cost(parameter_values)
 
         # store evaluation result for the future use
-        entry = {name: value for (name, value) in zip(self.__parameter_names, raw_values)}
+        entry = dict(zip(self.__parameter_names, raw_values))
         entry[names.Iteration] = self.__iterations
         entry[names.Cost] = cost
         entry[names.InvalidParameterCombination] = invalid_parameter_combination
@@ -66,6 +71,15 @@ class Evaluator:
             evaluations: int,
             fast_evaluations: int,
     ):
+        """
+        Registers final report.
+        :param cost: minimal value of a cost function (the optimum)
+        :param optimum: the values of cost function arguments corresponding to the optimum
+        :param iterations: number of iterations performed
+        :param evaluations: number of evaluations performed
+        :param fast_evaluations: number of fast_evaluations
+        :return: None
+        """
         report = Report(
             bounds=self.__config.rbfopt.parameters,
             cost=cost,
@@ -79,6 +93,10 @@ class Evaluator:
         self.__report = report
 
     def dump(self) -> (pd.DataFrame, Report):
+        """
+        Returns the list of performed cost function evaluations.
+        :return: DataFrame + json-serializable Report compatible with Golang library
+        """
         # dump history of evaluations for future usage
         evaluations = pd.DataFrame(self.__evaluations)
         file_path = self.__root_dir.joinpath("evaluations.csv")

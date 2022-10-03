@@ -50,7 +50,7 @@ func (cfg *serviceConfig) costFunction(_ context.Context) (optimization.Cost, er
 	return optimization.Cost(-1 * (x*y + z)), nil
 }
 
-func TestRbfoptGo(t *testing.T) {
+func TestOptimize(t *testing.T) {
 	t.Run("positive", func(t *testing.T) {
 		cfg := &serviceConfig{paramX: 0, paramY: 0, paramZ: 0}
 
@@ -191,6 +191,13 @@ func TestRbfoptGo(t *testing.T) {
 				}
 			})
 		}
+	})
+
+	t.Run("invalid config", func(t *testing.T) {
+		var c *optimization.Config
+
+		_, err := optimization.Optimize(context.Background(), c)
+		require.Error(t, err)
 	})
 }
 

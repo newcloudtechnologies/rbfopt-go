@@ -23,11 +23,11 @@ type server struct {
 }
 
 // Estimate Cost
-
 func (s *server) estimateCostHandler(w http.ResponseWriter, r *http.Request) {
 	s.middleware(w, r, s.estimateCost)
 }
 
+//nolint:dupl // TODO: need to use more advanced web framework
 func (s *server) estimateCost(ctx context.Context, w http.ResponseWriter, r *http.Request) (int, error) {
 	if r.Method != http.MethodGet {
 		return http.StatusMethodNotAllowed, errors.New("invalid method")
@@ -47,7 +47,7 @@ func (s *server) estimateCost(ctx context.Context, w http.ResponseWriter, r *htt
 	}
 
 	encoder := json.NewEncoder(w)
-	if err := encoder.Encode(response); err != nil {
+	if err = encoder.Encode(response); err != nil {
 		return http.StatusInternalServerError, errors.Wrap(err, "json encode")
 	}
 
@@ -55,11 +55,11 @@ func (s *server) estimateCost(ctx context.Context, w http.ResponseWriter, r *htt
 }
 
 // Register report
-
 func (s *server) registerReportHandler(w http.ResponseWriter, r *http.Request) {
 	s.middleware(w, r, s.registerReport)
 }
 
+//nolint:dupl // TODO: need to use more advanced web framework
 func (s *server) registerReport(
 	ctx context.Context,
 	w http.ResponseWriter,
@@ -83,7 +83,7 @@ func (s *server) registerReport(
 	}
 
 	encoder := json.NewEncoder(w)
-	if err := encoder.Encode(response); err != nil {
+	if err = encoder.Encode(response); err != nil {
 		return http.StatusInternalServerError, errors.Wrap(err, "json encode")
 	}
 
@@ -125,8 +125,8 @@ func (s *server) annotateLogger(r *http.Request) logr.Logger {
 	)
 }
 
-func (s *server) quit() {
-	if err := s.httpServer.Shutdown(context.Background()); err != nil {
+func (s *server) quit(ctx context.Context) {
+	if err := s.httpServer.Shutdown(ctx); err != nil {
 		s.logger.Error(err, "http server shutdown")
 	}
 }

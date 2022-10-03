@@ -6,8 +6,26 @@
 
 package optimization
 
+import (
+	"github.com/pkg/errors"
+)
+
 type estimateCostRequest struct {
 	ParameterValues []*ParameterValue `json:"parameter_values"`
+}
+
+func (r *estimateCostRequest) applyValues(config *RBFOptConfig) error {
+	// apply all values to config first
+	for _, pv := range r.ParameterValues {
+		parameterDesc, err := config.getParameterByName(pv.Name)
+		if err != nil {
+			return errors.Wrapf(err, "get parameter by name: %s", pv.Name)
+		}
+
+		parameterDesc.ConfigModifier(pv.Value)
+	}
+
+	return nil
 }
 
 type estimateCostResponse struct {

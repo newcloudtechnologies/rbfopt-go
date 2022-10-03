@@ -11,10 +11,13 @@ import requests
 
 from rbfoptgo.common import Cost, ParameterValue
 from rbfoptgo.report import Report
-import rbfoptgo.names as names
+from rbfoptgo import names
 
 
 class Client:
+    """
+    HTTP client to the Go part of library
+    """
     url_head: str
     session: requests.Session
 
@@ -23,6 +26,12 @@ class Client:
         self.session = requests.Session()
 
     def estimate_cost(self, parameter_values: List[ParameterValue]) -> (Cost, bool):
+        """
+        Requests a particular cost function value for a given parameters
+        :param parameter_values: a vector of parameters
+        :return: 1. The value of a cost function
+               2. Sign that optimizer gave a vector of parameters that was considered as non-optimal
+        """
         print(f"request '{parameter_values}'")
 
         payload = dict(parameter_values=parameter_values)
@@ -35,10 +44,15 @@ class Client:
 
         if response.status_code != HTTPStatus.OK:
             raise ValueError(f'invalid status code {response.status_code}')
-        else:
-            return response.json()[names.Cost], response.json()[names.InvalidParameterCombination]
+
+        return response.json()[names.Cost], response.json()[names.InvalidParameterCombination]
 
     def register_report(self, report: Report):
+        """
+        Posts the report to the Go sides
+        :param report: optimizer report itself
+        :return:
+        """
         print(f"request '{report}'")
 
         payload = dict(report=report)
