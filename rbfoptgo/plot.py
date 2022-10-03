@@ -22,6 +22,7 @@ from rbfoptgo.report import Report
 
 
 class Renderer:
+    """Renderer is responsible for plot generation"""
     __df: pd.DataFrame
     __report: Report
     __config: Config
@@ -37,7 +38,7 @@ class Renderer:
         match policy:
             case InvalidParameterCombinationRenderPolicy.omit:
                 # Filter values corresponding to ErrInvalidParameterCombination params
-                return self.__df[self.__df.invalid_parameter_combination == False]
+                return self.__df[self.__df.invalid_parameter_combination == False] # pylint: disable=singleton-comparison
             case InvalidParameterCombinationRenderPolicy.assign_closest_valid_value:
                 # avoid white spots on the heatmap
                 unique_costs = self.__df.cost.unique()
@@ -47,14 +48,14 @@ class Renderer:
 
                 # make df with replaced values
                 df = self.__df.copy()
-                mask = df.invalid_parameter_combination == True
+                mask = df.invalid_parameter_combination == True # pylint: disable=singleton-comparison
                 df.cost.where(~mask, closest_valid_value, inplace=True)
                 return df
             case _:
                 raise ValueError(f"unknown policy: {policy}")
 
     @property
-    @functools.cache
+    @functools.lru_cache()
     def __parameter_column_names(self) -> typing.List[str]:
         utility_columns = (names.Cost, names.InvalidParameterCombination)
         return list(filter(lambda x: x not in utility_columns, self.__df.columns))
@@ -64,6 +65,10 @@ class Renderer:
         return [cost.min(), cost.max()]
 
     def scatterplots(self):
+        """
+        Renders scatterplots.
+        :return:
+        """
         self.__render_scatterplot_group(only_optimal_values=False)
         self.__render_scatterplot_group(only_optimal_values=True)
 
@@ -86,11 +91,11 @@ class Renderer:
                                  squeeze=False, constrained_layout=True)
         axes = axes.flat
 
-        for i in range(len(axes)):
+        for i, ax in enumerate(axes):
             if i < len(column_names):
-                self.__render_scatterplot(axes[i], column_names[i], only_optimal_values=only_optimal_values)
+                self.__render_scatterplot(ax, column_names[i], only_optimal_values=only_optimal_values)
             else:
-                axes[i].axis('off')
+                ax.axis('off')
 
         fig.tight_layout()
 
@@ -124,9 +129,13 @@ class Renderer:
         ax.set_ylim(bottom=cost_min, top=cost_max)
 
     def heatmaps(self):
+        """
+        Renders multiple heatmaps.
+        :return:
+        """
         df = self.__prepare_df(policy=self.__config.plot.heatmap_render_policy)
 
-        # TODO: one can pass a particular set of interpolation methods,
+        # NOTE: one can pass a particular set of interpolation methods,
         #  but honestly I can't see any significant difference between them.
         # methods = ['none', 'nearest', 'bilinear', 'bicubic', 'spline16',
         #            'spline36', 'hanning', 'hamming', 'hermite', 'kaiser', 'quadric',
@@ -314,6 +323,10 @@ class Renderer:
         return col_val_1, col_val_2, cost_val
 
     def radar(self):
+        """
+        Renders radar plot.
+        :return:
+        """
         # convert optimum values to df
         df = pd.DataFrame(self.__report.optimum).T
         df.columns = df.iloc[0]

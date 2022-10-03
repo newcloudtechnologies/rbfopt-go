@@ -21,10 +21,9 @@ type ParameterValue struct {
 }
 
 // Report contains information about the finished optimization process
-//nolint:govet
 type Report struct {
-	Cost            Cost              `json:"cost"`    // Discovered optimal value of a CostFunction
 	Optimum         []*ParameterValue `json:"optimum"` // Parameter values matching the optimum point
+	Cost            Cost              `json:"cost"`    // Discovered optimal value of a CostFunction
 	Iterations      int               `json:"iterations"`
 	Evaluations     int               `json:"evaluations"`
 	FastEvaluations int               `json:"fast_evaluations"`
@@ -44,22 +43,24 @@ func Optimize(ctx context.Context, config *Config) (*Report, error) {
 	estimator := newCostEstimator(config)
 
 	srv := newServer(logger, config.Endpoint, estimator)
-	defer srv.quit()
+	defer srv.quit(ctx)
 
 	// create root directory for configs and artifacts if necessary
 	if _, err := os.Stat(config.RootDir); err != nil {
-		if os.IsNotExist(err) {
-			if err := os.MkdirAll(config.RootDir, 0755); err != nil {
-				return nil, errors.Wrap(err, "make directory")
-			}
-		} else {
+		if !os.IsNotExist(err) {
 			return nil, errors.Wrap(err, "stat directory")
+		}
+
+		logger.Info("check root dir", "error", err)
+
+		if err = os.MkdirAll(config.RootDir, 0755); err != nil {
+			return nil, errors.Wrap(err, "make directory")
 		}
 	}
 
 	// run Python optimizer
-	ctx = logr.NewContext(ctx, logger)
-	if err := runRbfOpt(ctx, config); err != nil {
+	ctxLogger := logr.NewContext(ctx, logger)
+	if err := runRbfOpt(ctxLogger, config); err != nil {
 		if srv.lastError != nil {
 			return nil, errors.Wrap(srv.lastError, "run rbfopt")
 		}

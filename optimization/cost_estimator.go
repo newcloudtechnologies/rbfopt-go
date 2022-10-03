@@ -19,17 +19,14 @@ type costEstimator struct {
 	attempts    int
 }
 
-func (ce *costEstimator) estimateCost(ctx context.Context, request *estimateCostRequest) (*estimateCostResponse, error) {
+func (ce *costEstimator) estimateCost(
+	ctx context.Context,
+	request *estimateCostRequest,
+) (*estimateCostResponse, error) {
 	logger := logr.FromContextOrDiscard(ctx)
-
 	// apply all values to config first
-	for _, pv := range request.ParameterValues {
-		parameterDesc, err := ce.config.RBFOpt.getParameterByName(pv.Name)
-		if err != nil {
-			return nil, errors.Wrapf(err, "get parameter by name: %s", pv.Name)
-		}
-
-		parameterDesc.ConfigModifier(pv.Value)
+	if err := request.applyValues(ce.config.RBFOpt); err != nil {
+		return nil, errors.Wrap(err, "modify parameters")
 	}
 
 	ce.attempts++
@@ -51,22 +48,21 @@ func (ce *costEstimator) estimateCost(ctx context.Context, request *estimateCost
 
 	if cost >= ce.config.RBFOpt.InvalidParameterCombinationCost {
 		return nil, errors.Wrapf(
-			ErrTooHighObservedCost,
+			ErrTooLowInvalidParameterCombinationCost,
 			"cost=%v, invalid_parameter_combination_cost=%v",
 			cost, ce.config.RBFOpt.InvalidParameterCombinationCost,
 		)
 	}
 
-	logger.V(1).Info(
-		"estimate cost",
-		"attempts", ce.attempts,
-		"request", request,
-		"response", response)
+	logger.V(1).Info("estimate cost", "attempts", ce.attempts, "request", request, "response", response)
 
 	return response, nil
 }
 
-func (ce *costEstimator) registerReport(ctx context.Context, request *registerReportRequest) (*registerReportResponse, error) {
+func (ce *costEstimator) registerReport(
+	ctx context.Context,
+	request *registerReportRequest,
+) (*registerReportResponse, error) {
 	logger := logr.FromContextOrDiscard(ctx)
 
 	if ce.finalReport != nil {

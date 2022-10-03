@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
+
+jobs:
+  CI:
+    runs-on: ubuntu-latest
+    container: fedora:36
+    steps:
+      # Dependencies:
+      - name: Pipeline dependencies
+        run: |
+          sudo dnf install -y git
+
+      - uses: actions/checkout@v3
+        with:
+          persist-credentials: false # otherwise, the token used is the GITHUB_TOKEN, instead of your personal access token.
+          fetch-depth: 0 # otherwise, there would be errors pushing refs to the destination repository.
+
+      - uses: actions/setup-go@v3.3.0
+        with:
+          go-version: 1.17.10
+
+      - name: Project dependencies
+        run: |
+          sudo dnf install -y gcc \
+            coin-or-Bonmin \
+            python3 python3-pip python3-pandas python3-matplotlib python3-scipy
+
+      - name: Python dependencies
+        run: |
+          pip install pylint pytest pytest-cov coverage-badge
+          python3 ./setup.py install
+
+      - name: Go dependencies
+        run: |
+          go mod verify
+          go get ./...
+
+      # Go checks
+      - name: Go linter
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: v1.49.0
+          args: -c .golangci.yml --timeout=10m
+          skip-pkg-cache: true
+          skip-build-cache: true
+
+      - name: Go tests
+        run: |
+          go test -v -cover ./...  -coverprofile=coverage.out -coverpkg ./...
+          go tool cover -func=coverage.out -o=coverage.out
+          go get github.com/AlexBeauchemin/gobadge 
+          gobadge -filename=coverage.out -text "Go"
+
+      # Python checks
+      - name: Python linter
+        run: pylint ./rbfoptgo
+
+      - name: Python tests
+        run: |
+          pytest --cov=. .
+          coverage-badge -o .coverage.python.svg  
+          sed -i 's/coverage/Python/g' .coverage.python.svg
+
+      # Post coverage badges
+      - name: Git workaround
+        run: git config --global --add safe.directory /__w/rbfopt-go/rbfopt-go
+
+      - name: Verify Changed files
+        uses: tj-actions/verify-changed-files@v9.1
+        id: verify-changed-files
+        with:
+          files: README.md .coverage.python.svg
+
+      - name: Commit changes
+        if: steps.verify-changed-files.outputs.files_changed == 'true'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add README.md
+          git commit -m "chore: Updated coverage badge."
+
+      - name: Push changes
+        if: steps.verify-changed-files.outputs.files_changed == 'true'
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ github.token }}
+          branch: ${{ github.head_ref }}

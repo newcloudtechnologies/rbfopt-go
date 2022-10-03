@@ -9,5 +9,8 @@ Cost = float
 
 @dataclass
 class ParameterValue:
+    """
+    Represents value of a particular parameter
+    """
     name: str
     value: int

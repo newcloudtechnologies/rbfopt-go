@@ -22,16 +22,27 @@ type Cost = float64
 // CostFunction call is expected to be expensive, so client should check context expiration.
 type CostFunction func(ctx context.Context) (Cost, error)
 
-// InitStrategy determines the way RBFOpt selects points.
+// InitStrategy determines the way RBFOpt selects the initial sample points:
+// See:
+// 1. https://github.com/coin-or/rbfopt/blob/4.2.3/src/rbfopt/rbfopt_settings.py#L119
+// 2. Https://usermanual.wiki/Document/manual.890598645/view (part 2.1)
 type InitStrategy int8
 
 const (
+	// LHDMaximin - the default init strategy
 	LHDMaximin InitStrategy = iota
+	// LHDCorr - one of possible init strategies
 	LHDCorr
+	// AllCorners - one of possible init strategies
 	AllCorners
+	// LowerCorners - one of possible init strategies
 	LowerCorners
+	// RandCorners - one of possible init strategies
 	RandCorners
 )
+
+// ErrUnknownInitStrategy is returned when user set unknown InitStrategy
+var ErrUnknownInitStrategy = errors.New("unknown strategy")
 
 // MarshalJSON renders InitStrategy to JSON.
 func (s InitStrategy) MarshalJSON() ([]byte, error) {
@@ -47,10 +58,11 @@ func (s InitStrategy) MarshalJSON() ([]byte, error) {
 	case RandCorners:
 		return []byte("\"rand_corners\""), nil
 	default:
-		return nil, fmt.Errorf("unknown InitStarategy: %v", s)
+		return nil, errors.Wrapf(ErrUnknownInitStrategy, "%v", s)
 	}
 }
 
+// RBFOptConfig - RBFOpt configuration
 type RBFOptConfig struct {
 	CostFunction   CostFunction            `json:"-"`               // CostFunction itself
 	Parameters     []*ParameterDescription `json:"parameters"`      // Arguments of a CostFunctions
@@ -61,6 +73,7 @@ type RBFOptConfig struct {
 	InvalidParameterCombinationCost Cost `json:"invalid_parameter_combination_cost"`
 }
 
+//nolint:revive // too simple function to split
 func (c *RBFOptConfig) validate() error {
 	if c == nil {
 		return errors.New("empty")
@@ -118,6 +131,10 @@ const (
 	AssignClosestValidValue
 )
 
+// ErrUnknownInvalidParameterCombinationRenderPolicy notifies about wrong InvalidParameterCombinationRenderPolicy value
+var ErrUnknownInvalidParameterCombinationRenderPolicy = errors.New("unknown InvalidParameterCombinationRenderPolicy")
+
+// MarshalJSON renders InvalidParameterCombinationRenderPolicy to JSON
 func (p InvalidParameterCombinationRenderPolicy) MarshalJSON() ([]byte, error) {
 	switch p {
 	case Omit:
@@ -126,9 +143,10 @@ func (p InvalidParameterCombinationRenderPolicy) MarshalJSON() ([]byte, error) {
 		return []byte("\"assign_closest_valid_value\""), nil
 	}
 
-	return nil, fmt.Errorf("unknown InvalidParameterCombinationRenderPolicy: %v", p)
+	return nil, errors.Wrapf(ErrUnknownInvalidParameterCombinationRenderPolicy, "%v", p)
 }
 
+// PlotConfig - plot renderer configuration
 type PlotConfig struct {
 	ScatterPlotPolicy   InvalidParameterCombinationRenderPolicy `json:"scatter_plot_policy"`
 	HeatmapRenderPolicy InvalidParameterCombinationRenderPolicy `json:"heatmap_render_policy"`
@@ -139,6 +157,10 @@ func (c *PlotConfig) String() string {
 }
 
 func (c *PlotConfig) validate() error {
+	if c == nil {
+		return errors.New("empty plot config")
+	}
+
 	if c.ScatterPlotPolicy == 0 {
 		return errors.New("field ScatterPlotIPCR is empty")
 	}
@@ -150,21 +172,26 @@ func (c *PlotConfig) validate() error {
 	return nil
 }
 
-// Config - a top-level configuration structure
+// Config is top level configuration
+//nolint:govet // have no time to find better configuration
 type Config struct {
+	// RBFOpt - config of rbfopt library itself
+	RBFOpt *RBFOptConfig `json:"rbfopt"` //nolint:tagliatelle // RBFOpt is a well-known name, no underscore is needed
+	// PlotConfig - config of plots made by wrapper
+	Plot *PlotConfig `json:"plot"`
 	// RootDir - place to store reports and other things
 	// (optimizer will create it if it doesn't exist).
 	RootDir string `json:"root_dir"`
 	// Endpoint for the server that will work as a middleware
 	Endpoint string `json:"endpoint"`
-	// RBFOpt - config of rbfopt library itself
-	RBFOpt *RBFOptConfig `json:"rbfopt"`
-	// PlotConfig - config of plots made by wrapper
-	Plot *PlotConfig `json:"plot"`
 }
 
 func (c *Config) validate() error {
-	if len(c.RootDir) == 0 {
+	if c == nil {
+		return errors.New("empty config")
+	}
+
+	if c.RootDir == "" {
 		return errors.New("field RootDir is empty")
 	}
 
