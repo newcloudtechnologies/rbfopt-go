@@ -254,6 +254,6 @@ of parameters between each other (and their influence on the cost function).
 
 ## Publications
 * Isaev V. A. Optimizing the cost of storing data in object storage (in Russian). Saint Highload 2022.
-[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/MTp2Z7RXLMY/0.jpg)](
+[![IMAGE ALT TEXT HERE](https://yt-embed.herokuapp.com/embed?v=MTp2Z7RXLMY)](
 https://www.youtube.com/watch?v=MTp2Z7RXLMY
 )
