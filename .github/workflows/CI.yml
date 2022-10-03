@@ -75,7 +75,9 @@ jobs:
         uses: tj-actions/verify-changed-files@v9.1
         id: verify-changed-files
         with:
-          files: README.md .coverage.python.svg
+          files: |
+            README.md
+            .coverage.python.svg
 
       - name: Commit changes
         if: steps.verify-changed-files.outputs.files_changed == 'true'
