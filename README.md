@@ -147,6 +147,8 @@ func (cfg *serviceConfig) costFunction(_ context.Context) (optimization.Cost, er
 }
 
 func main() {
+	// This is the instance of your service's configuration. It will be changed by reference during
+	// the optimizer work
 	cfg := &serviceConfig{}
 
 	// Describe the variables and set the bounds.
@@ -246,6 +248,12 @@ of parameters between each other (and their influence on the cost function).
 
 ![pairwise heatmap matrix](/docs/heatmap_matrix_hamming.png)
 
-## Limitations
+## TODO
 
-* Floating-point and categorical parameters are not supported yet.
+* Support floating-point and categorical parameters.
+
+## Publications
+* Isaev V. A. Optimizing the cost of storing data in object storage (in Russian). Saint Highload 2022.
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/MTp2Z7RXLMY/0.jpg)](
+https://www.youtube.com/watch?v=MTp2Z7RXLMY
+)
